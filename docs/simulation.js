@@ -224,7 +224,48 @@ class Simulation {
         return {
             hasFailed: this.hasFailed,
             failureType: this.failureType,
-            speed: this.currentSpeed
+            speed: this.currentSpeed,
+            failureAnalysis: this.lastFailureAnalysis || null
+        };
+    }
+    
+    // Synchronized test at a specific speed
+    async testSpeed(speedMPH, animationDuration, progressCb) {
+        if (this.shouldStop || this.hasFailed) {
+            return {
+                hasFailed: this.hasFailed,
+                failureType: this.failureType,
+                speed: speedMPH,
+                failureAnalysis: this.lastFailureAnalysis || null
+            };
+        }
+        
+        // Analyze failure at this speed
+        const analysis = this.physics.analyzeFailure(this.vehicle, speedMPH, this.turnAngle);
+        this.lastFailureAnalysis = analysis;
+        
+        if (analysis.hasFailed) {
+            this.hasFailed = true;
+            this.failureType = analysis.failureType;
+            this.currentSpeed = speedMPH;
+            this.simulateFailure(analysis);
+            return {
+                hasFailed: true,
+                failureType: analysis.failureType,
+                speed: speedMPH,
+                failureAnalysis: analysis
+            };
+        }
+        
+        // Animate vehicle through turn at this speed
+        await this.animateTurn(speedMPH, animationDuration, progressCb);
+        
+        this.currentSpeed = speedMPH;
+        return {
+            hasFailed: false,
+            failureType: null,
+            speed: speedMPH,
+            failureAnalysis: analysis
         };
     }
 

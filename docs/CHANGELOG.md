@@ -1,5 +1,26 @@
 # Vehicle Turn Simulation - Change Log
 
+## Synchronized Speed Testing & Detailed Failure Math (Jan 2026)
+
+### Changes
+- **Synchronized speed testing**: Both vehicles now test the exact same speed simultaneously
+  - Uses Promise.all to ensure both vehicles test identical speeds at the same time
+  - Winner must complete the exact speed that the loser failed at
+  - Eliminates timing discrepancies that could cause incorrect winner determination
+- **Detailed failure analysis display**: Shows exact math calculations for failing step
+  - Turn radius calculation
+  - Lateral acceleration required vs limits
+  - Spin-out threshold (friction-based) with margins
+  - Rollover threshold (SSF-based) with margins
+  - Clear indication of which threshold was exceeded (FAILED) vs passed (PASSED)
+  - Color-coded display (red for failed, green for passed)
+- **Accurate winner determination**: Winner is guaranteed to have completed the speed the loser failed at
+  - Both vehicles tested at identical speeds using synchronized Promise.all
+  - When one fails, the other has already completed that same speed
+  - Results show exact speeds for accurate comparison
+
+---
+
 ## Simulation End Logic & Winner Detection (Jan 2026)
 
 ### Changes

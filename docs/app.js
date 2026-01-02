@@ -127,14 +127,89 @@ startBtn.addEventListener('click', async () => {
         // Get speed step value from input (allow decimals)
         const speedStep = parseFloat(speedStepInput.value) || 1;
         
-        // Run both simulations simultaneously with callbacks to check if other has failed
-        // Each simulation can stop early if the other vehicle fails first
-        const [corollaResult, caravanResult] = await Promise.all([
-            corollaSim.run(speedStep, 150, (speed) => handleProgress('corolla', speed), 
-                () => caravanSim.hasFailed), // Check if caravan failed
-            caravanSim.run(speedStep, 150, (speed) => handleProgress('caravan', speed),
-                () => corollaSim.hasFailed)  // Check if corolla failed
-        ]);
+        // Synchronized run: test both vehicles at the exact same speeds simultaneously
+        const startSpeed = 10;
+        const maxSpeed = 150;
+        const animationDuration = 5000; // 5 seconds per speed increment
+        
+        let currentSpeed = startSpeed;
+        let corollaResult = null;
+        let caravanResult = null;
+        let corollaFailed = false;
+        let caravanFailed = false;
+        
+        // Reset simulations
+        corollaSim.shouldStop = false;
+        corollaSim.isRunning = true;
+        corollaSim.hasFailed = false;
+        caravanSim.shouldStop = false;
+        caravanSim.isRunning = true;
+        caravanSim.hasFailed = false;
+        
+        // Test speeds synchronously - both vehicles test the exact same speed at the same time
+        while (currentSpeed <= maxSpeed && (!corollaFailed || !caravanFailed)) {
+            // Test both vehicles at the same speed simultaneously
+            const [corollaTest, caravanTest] = await Promise.all([
+                corollaSim.testSpeed(currentSpeed, animationDuration, 
+                    (speed) => handleProgress('corolla', speed)),
+                caravanSim.testSpeed(currentSpeed, animationDuration,
+                    (speed) => handleProgress('caravan', speed))
+            ]);
+            
+            // Store results for this speed
+            if (!corollaFailed) {
+                if (corollaTest.hasFailed) {
+                    corollaFailed = true;
+                    corollaResult = corollaTest;
+                } else {
+                    corollaResult = corollaTest; // Store successful completion
+                }
+            }
+            
+            if (!caravanFailed) {
+                if (caravanTest.hasFailed) {
+                    caravanFailed = true;
+                    caravanResult = caravanTest;
+                } else {
+                    caravanResult = caravanTest; // Store successful completion
+                }
+            }
+            
+            // If both failed at this speed, we're done
+            if (corollaFailed && caravanFailed) {
+                break;
+            }
+            
+            // If one failed, the other has already completed this speed (tested simultaneously)
+            // So we're done - the winner has proven it can handle the speed the loser failed at
+            if ((corollaFailed || caravanFailed) && corollaResult && caravanResult) {
+                break;
+            }
+            
+            currentSpeed += speedStep;
+        }
+        
+        // Ensure we have results
+        if (!corollaResult) {
+            corollaResult = {
+                hasFailed: false,
+                failureType: null,
+                speed: Math.max(startSpeed, currentSpeed - speedStep),
+                failureAnalysis: corollaSim.lastFailureAnalysis
+            };
+        }
+        
+        if (!caravanResult) {
+            caravanResult = {
+                hasFailed: false,
+                failureType: null,
+                speed: Math.max(startSpeed, currentSpeed - speedStep),
+                failureAnalysis: caravanSim.lastFailureAnalysis
+            };
+        }
+        
+        corollaSim.isRunning = false;
+        caravanSim.isRunning = false;
         
         // Determine winner - audit all cases
         let winner = null;
@@ -189,9 +264,9 @@ startBtn.addEventListener('click', async () => {
             caravanStatusDisplay.className = 'status-ready';
         }
         
-        // Analysis text
-        corollaAnalysis.textContent = buildVehicleAnalysis('Toyota Corolla', corollaResult);
-        caravanAnalysis.textContent = buildVehicleAnalysis('Dodge Caravan', caravanResult);
+        // Analysis text (use innerHTML to render math formatting)
+        corollaAnalysis.innerHTML = buildVehicleAnalysis('Toyota Corolla', corollaResult);
+        caravanAnalysis.innerHTML = buildVehicleAnalysis('Dodge Caravan', caravanResult);
         winnerSummary.textContent = buildWinnerSummary(winner, corollaResult, caravanResult);
         
         corollaSpeedDisplay.textContent = corollaResult.speed.toFixed(1);
@@ -243,7 +318,51 @@ function buildVehicleAnalysis(name, result) {
     }
     
     const failure = result.failureType === 'spin-out' ? 'lost grip (spin-out)' : 'rolled over (stability limit)';
-    return `${name} ${failure} at ${result.speed.toFixed(1)} mph.`;
+    let analysis = `<strong>${name} ${failure} at ${result.speed.toFixed(1)} mph.</strong><br><br>`;
+    
+    // Show detailed math if failure analysis is available
+    if (result.failureAnalysis) {
+        const analysisData = result.failureAnalysis;
+        const spinOut = analysisData.spinOut;
+        const rollover = analysisData.rollover;
+        
+        analysis += `<div class="math-details">`;
+        analysis += `<strong>Failure Analysis at ${result.speed.toFixed(1)} mph:</strong><br>`;
+        analysis += `Turn Radius: <code>${spinOut.turnRadius.toFixed(2)} ft</code><br>`;
+        analysis += `Lateral Acceleration: <code>${spinOut.lateralAccel.toFixed(2)} ft/s²</code><br><br>`;
+        
+        if (result.failureType === 'spin-out') {
+            analysis += `<div class="failure-threshold">`;
+            analysis += `<strong>SPIN-OUT THRESHOLD EXCEEDED:</strong><br>`;
+            analysis += `&nbsp;&nbsp;Required: <code>${spinOut.lateralAccel.toFixed(2)} ft/s²</code><br>`;
+            analysis += `&nbsp;&nbsp;Limit: <code>${spinOut.limit.toFixed(2)} ft/s²</code><br>`;
+            analysis += `&nbsp;&nbsp;Margin: <code class="failed">${spinOut.margin.toFixed(2)} ft/s²</code> (FAILED)<br>`;
+            analysis += `</div><br>`;
+            analysis += `<div class="passed-check">`;
+            analysis += `Rollover Check:<br>`;
+            analysis += `&nbsp;&nbsp;Required: <code>${rollover.lateralAccel.toFixed(2)} ft/s²</code><br>`;
+            analysis += `&nbsp;&nbsp;Limit: <code>${rollover.limit.toFixed(2)} ft/s²</code><br>`;
+            analysis += `&nbsp;&nbsp;Margin: <code class="passed">${rollover.margin.toFixed(2)} ft/s²</code> (PASSED)`;
+            analysis += `</div>`;
+        } else {
+            analysis += `<div class="passed-check">`;
+            analysis += `Spin-out Check:<br>`;
+            analysis += `&nbsp;&nbsp;Required: <code>${spinOut.lateralAccel.toFixed(2)} ft/s²</code><br>`;
+            analysis += `&nbsp;&nbsp;Limit: <code>${spinOut.limit.toFixed(2)} ft/s²</code><br>`;
+            analysis += `&nbsp;&nbsp;Margin: <code class="passed">${spinOut.margin.toFixed(2)} ft/s²</code> (PASSED)<br>`;
+            analysis += `</div><br>`;
+            analysis += `<div class="failure-threshold">`;
+            analysis += `<strong>ROLLOVER THRESHOLD EXCEEDED:</strong><br>`;
+            analysis += `&nbsp;&nbsp;Required: <code>${rollover.lateralAccel.toFixed(2)} ft/s²</code><br>`;
+            analysis += `&nbsp;&nbsp;Limit: <code>${rollover.limit.toFixed(2)} ft/s²</code><br>`;
+            analysis += `&nbsp;&nbsp;Margin: <code class="failed">${rollover.margin.toFixed(2)} ft/s²</code> (FAILED)<br>`;
+            analysis += `&nbsp;&nbsp;SSF: <code>${rollover.SSF.toFixed(3)}</code>`;
+            analysis += `</div>`;
+        }
+        analysis += `</div>`;
+    }
+    
+    return analysis;
 }
 
 function buildWinnerSummary(winner, corollaResult, caravanResult) {
