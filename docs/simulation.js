@@ -56,79 +56,85 @@ class Simulation {
         ctx.fillStyle = '#f5f5f5';
         ctx.fillRect(0, 0, width, height);
         
-        // Draw road/track
+        // Road parameters
         const centerY = height / 2;
         const roadWidth = 120;
+        const straightLength = width * 0.35;
+        const turnRadius = Math.min(width * 0.25, height * 0.25);
+        const exitLength = width * 0.3;
         
-        // Draw straight section
+        // Calculate turn geometry
+        const turnStartX = straightLength;
+        const turnCenterX = turnStartX + turnRadius;
+        const turnCenterY = centerY;
+        
+        // Convert turn angle to radians
+        const turnAngleRad = (this.turnAngle * Math.PI) / 180;
+        const startAngle = -Math.PI / 2; // Start pointing down (south)
+        const endAngle = startAngle + turnAngleRad;
+        
+        // Calculate exit section start point (end of turn arc)
+        const exitStartX = turnCenterX + Math.cos(endAngle) * turnRadius;
+        const exitStartY = turnCenterY + Math.sin(endAngle) * turnRadius;
+        
+        // Calculate perpendicular vector for road width offset
+        // For angle θ, perpendicular vector pointing right is (-sin(θ), cos(θ))
+        const perpX = -Math.sin(endAngle);
+        const perpY = Math.cos(endAngle);
+        const offsetX = perpX * roadWidth / 2;
+        const offsetY = perpY * roadWidth / 2;
+        
+        // Calculate exit section end point
+        const exitEndX = exitStartX + Math.cos(endAngle) * exitLength;
+        const exitEndY = exitStartY + Math.sin(endAngle) * exitLength;
+        
+        // Draw road as a continuous path
         ctx.fillStyle = '#333';
-        ctx.fillRect(0, centerY - roadWidth / 2, width * 0.4, roadWidth);
+        ctx.beginPath();
+        
+        // Start with straight section (left edge)
+        ctx.moveTo(0, centerY - roadWidth / 2);
+        ctx.lineTo(turnStartX, centerY - roadWidth / 2);
+        
+        // Connect to outer arc of turn
+        ctx.arc(turnCenterX, turnCenterY, turnRadius + roadWidth / 2, startAngle, endAngle, false);
+        
+        // Continue to exit section (outer edge - right side of exit road)
+        ctx.lineTo(exitEndX + offsetX, exitEndY + offsetY);
+        
+        // Draw exit section (inner edge - left side of exit road)
+        ctx.lineTo(exitStartX + offsetX, exitStartY + offsetY);
+        
+        // Connect to inner arc of turn
+        ctx.arc(turnCenterX, turnCenterY, turnRadius - roadWidth / 2, endAngle, startAngle, true);
+        
+        // Close back to start of straight section (right edge)
+        ctx.lineTo(0, centerY + roadWidth / 2);
+        ctx.closePath();
+        ctx.fill();
         
         // Draw lane markings
         ctx.strokeStyle = '#ffd700';
         ctx.lineWidth = 2;
         ctx.setLineDash([10, 10]);
+        
+        // Straight section lane marking
         ctx.beginPath();
         ctx.moveTo(0, centerY);
-        ctx.lineTo(width * 0.4, centerY);
+        ctx.lineTo(turnStartX, centerY);
         ctx.stroke();
-        ctx.setLineDash([]);
         
-        // Draw turn section (right-hand turn)
-        const turnStartX = width * 0.4;
-        const turnRadius = Math.min(width * 0.3, height * 0.3);
-        const turnCenterX = turnStartX + turnRadius;
-        const turnCenterY = centerY;
-        
-        // Outer arc
+        // Turn section lane marking
         ctx.beginPath();
-        ctx.arc(turnCenterX, turnCenterY, turnRadius + roadWidth / 2, -Math.PI / 2, 
-                -Math.PI / 2 + (this.turnAngle * Math.PI / 180), false);
-        ctx.lineWidth = roadWidth;
-        ctx.strokeStyle = '#333';
+        ctx.arc(turnCenterX, turnCenterY, turnRadius, startAngle, endAngle, false);
         ctx.stroke();
         
-        // Inner arc
-        ctx.beginPath();
-        ctx.arc(turnCenterX, turnCenterY, turnRadius - roadWidth / 2, -Math.PI / 2, 
-                -Math.PI / 2 + (this.turnAngle * Math.PI / 180), false);
-        ctx.lineWidth = roadWidth;
-        ctx.strokeStyle = '#f5f5f5';
-        ctx.stroke();
-        
-        // Draw turn lane marking
-        ctx.strokeStyle = '#ffd700';
-        ctx.lineWidth = 2;
-        ctx.setLineDash([10, 10]);
-        ctx.beginPath();
-        ctx.arc(turnCenterX, turnCenterY, turnRadius, -Math.PI / 2, 
-                -Math.PI / 2 + (this.turnAngle * Math.PI / 180), false);
-        ctx.stroke();
-        ctx.setLineDash([]);
-        
-        // Draw exit straight section
-        const exitAngle = -Math.PI / 2 + (this.turnAngle * Math.PI / 180);
-        const exitStartX = turnCenterX + Math.cos(exitAngle) * turnRadius;
-        const exitStartY = turnCenterY + Math.sin(exitAngle) * turnRadius;
-        const exitLength = width * 0.3;
-        const exitEndX = exitStartX + Math.cos(exitAngle) * exitLength;
-        const exitEndY = exitStartY + Math.sin(exitAngle) * exitLength;
-        
-        ctx.fillStyle = '#333';
-        ctx.save();
-        ctx.translate(exitStartX, exitStartY);
-        ctx.rotate(exitAngle);
-        ctx.fillRect(0, -roadWidth / 2, exitLength, roadWidth);
-        ctx.restore();
-        
-        // Draw exit lane marking
-        ctx.strokeStyle = '#ffd700';
-        ctx.lineWidth = 2;
-        ctx.setLineDash([10, 10]);
+        // Exit section lane marking
         ctx.beginPath();
         ctx.moveTo(exitStartX, exitStartY);
         ctx.lineTo(exitEndX, exitEndY);
         ctx.stroke();
+        
         ctx.setLineDash([]);
         
         // Draw track history
@@ -204,11 +210,26 @@ class Simulation {
             const width = this.canvas.width;
             const height = this.canvas.height;
             const centerY = height / 2;
-            const turnStartX = width * 0.4;
-            const turnRadius = Math.min(width * 0.3, height * 0.3);
+            
+            // Match geometry with drawTrack
+            const straightLength = width * 0.35;
+            const turnRadius = Math.min(width * 0.25, height * 0.25);
+            const exitLength = width * 0.3;
+            const turnStartX = straightLength;
             const turnCenterX = turnStartX + turnRadius;
             const turnCenterY = centerY;
-            const exitAngle = -Math.PI / 2 + (this.turnAngle * Math.PI / 180);
+            
+            // Calculate arc length for turn (for proportional timing)
+            const turnAngleRad = (this.turnAngle * Math.PI) / 180;
+            const arcLength = turnRadius * turnAngleRad;
+            const totalLength = straightLength + arcLength + exitLength;
+            
+            // Calculate progress thresholds based on actual lengths
+            const straightProgress = straightLength / totalLength;
+            const turnProgress = arcLength / totalLength;
+            
+            const startAngle = -Math.PI / 2;
+            const endAngle = startAngle + turnAngleRad;
             
             const animate = () => {
                 if (this.hasFailed) {
@@ -222,26 +243,26 @@ class Simulation {
                 // Calculate position along track
                 let x, y, rotation;
                 
-                if (progress < 0.4) {
+                if (progress < straightProgress) {
                     // Straight section
-                    x = (width * 0.4) * progress / 0.4;
+                    const straightProgressLocal = progress / straightProgress;
+                    x = straightLength * straightProgressLocal;
                     y = centerY;
                     rotation = 0;
-                } else if (progress < 0.7) {
+                } else if (progress < straightProgress + turnProgress) {
                     // Turn section
-                    const turnProgress = (progress - 0.4) / 0.3;
-                    const angle = -Math.PI / 2 + (this.turnAngle * Math.PI / 180) * turnProgress;
+                    const turnProgressLocal = (progress - straightProgress) / turnProgress;
+                    const angle = startAngle + turnAngleRad * turnProgressLocal;
                     x = turnCenterX + Math.cos(angle) * turnRadius;
                     y = turnCenterY + Math.sin(angle) * turnRadius;
-                    rotation = (this.turnAngle * turnProgress) - 90;
+                    rotation = (this.turnAngle * turnProgressLocal) - 90;
                 } else {
                     // Exit section
-                    const exitProgress = (progress - 0.7) / 0.3;
-                    const exitLength = width * 0.3;
-                    const exitStartX = turnCenterX + Math.cos(exitAngle) * turnRadius;
-                    const exitStartY = turnCenterY + Math.sin(exitAngle) * turnRadius;
-                    x = exitStartX + Math.cos(exitAngle) * exitLength * exitProgress;
-                    y = exitStartY + Math.sin(exitAngle) * exitLength * exitProgress;
+                    const exitProgressLocal = (progress - straightProgress - turnProgress) / (1 - straightProgress - turnProgress);
+                    const exitStartX = turnCenterX + Math.cos(endAngle) * turnRadius;
+                    const exitStartY = turnCenterY + Math.sin(endAngle) * turnRadius;
+                    x = exitStartX + Math.cos(endAngle) * exitLength * exitProgressLocal;
+                    y = exitStartY + Math.sin(endAngle) * exitLength * exitProgressLocal;
                     rotation = this.turnAngle - 90;
                 }
                 
