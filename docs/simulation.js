@@ -12,6 +12,7 @@ class Simulation {
         this.hasFailed = false;
         this.failureType = null;
         this.track = [];
+        this.simSpeedMultiplier = 0.6; // Default mid-speed
         
         this.resizeCanvas();
         window.addEventListener('resize', () => this.resizeCanvas());
@@ -33,6 +34,10 @@ class Simulation {
 
     setFrictionCoeff(mu) {
         this.physics.setFrictionCoeff(mu);
+    }
+
+    setSimSpeed(multiplier) {
+        this.simSpeedMultiplier = multiplier;
     }
 
     reset() {
@@ -59,23 +64,30 @@ class Simulation {
         
         // Road parameters
         const roadWidth = 120;
-        const startX = width * 0.35;
-        const startY = height * 0.8;
-        const straightLength = height * 0.35;
         const turnRadius = Math.min(width, height) * 0.2;
+        const approachLength = width * 0.35;
         const exitLength = width * 0.4;
         
-        // Geometry: move up, then right turn (variable angle), then exit rightward
-        const turnStartX = startX;
-        const turnStartY = startY - straightLength;
-        const turnCenterX = turnStartX + turnRadius;
-        const turnCenterY = turnStartY;
+        // Geometry: approach horizontally from left, then single right turn (adjustable angle)
+        // Turn center is positioned so the approach is horizontal and turn goes up/right
+        const turnCenterX = width * 0.35;
+        const turnCenterY = height * 0.6;
+        
+        // Approach: horizontal from left, ending at bottom of turn arc
+        const approachEndX = turnCenterX;
+        const approachEndY = turnCenterY + turnRadius;
+        const approachStartX = approachEndX - approachLength;
+        const approachStartY = approachEndY;
+        
+        // Turn: arc from bottom (approach direction) sweeping by turnAngle
         const turnAngleRad = (this.turnAngle * Math.PI) / 180;
-        const startAngle = Math.PI; // start on left of center (tangent up)
-        const endAngle = startAngle - turnAngleRad; // sweep anticlockwise to turn right
-        const exitStartX = turnCenterX + Math.cos(endAngle) * turnRadius;
-        const exitStartY = turnCenterY + Math.sin(endAngle) * turnRadius;
-        const exitDir = endAngle - Math.PI / 2; // tangent direction after turn
+        const arcStartAngle = Math.PI / 2; // bottom of circle (tangent goes right)
+        const arcEndAngle = arcStartAngle - turnAngleRad; // sweep counterclockwise
+        
+        // Exit: continue tangent from end of arc
+        const exitStartX = turnCenterX + Math.cos(arcEndAngle) * turnRadius;
+        const exitStartY = turnCenterY + Math.sin(arcEndAngle) * turnRadius;
+        const exitDir = arcEndAngle - Math.PI / 2; // tangent direction
         const exitEndX = exitStartX + Math.cos(exitDir) * exitLength;
         const exitEndY = exitStartY + Math.sin(exitDir) * exitLength;
         
@@ -86,9 +98,9 @@ class Simulation {
         ctx.lineCap = 'butt';
         ctx.lineJoin = 'round';
         ctx.beginPath();
-        ctx.moveTo(startX, startY);
-        ctx.lineTo(turnStartX, turnStartY);
-        ctx.arc(turnCenterX, turnCenterY, turnRadius, startAngle, endAngle, true);
+        ctx.moveTo(approachStartX, approachStartY);
+        ctx.lineTo(approachEndX, approachEndY);
+        ctx.arc(turnCenterX, turnCenterY, turnRadius, arcStartAngle, arcEndAngle, true);
         ctx.lineTo(exitEndX, exitEndY);
         ctx.stroke();
         ctx.restore();
@@ -99,24 +111,14 @@ class Simulation {
         ctx.lineWidth = 4;
         ctx.setLineDash([18, 12]);
         ctx.beginPath();
-        ctx.moveTo(startX, startY);
-        ctx.lineTo(turnStartX, turnStartY);
-        ctx.arc(turnCenterX, turnCenterY, turnRadius, startAngle, endAngle, true);
+        ctx.moveTo(approachStartX, approachStartY);
+        ctx.lineTo(approachEndX, approachEndY);
+        ctx.arc(turnCenterX, turnCenterY, turnRadius, arcStartAngle, arcEndAngle, true);
         ctx.lineTo(exitEndX, exitEndY);
         ctx.stroke();
         ctx.restore();
         
-        // Draw track history
-        if (this.track.length > 0) {
-            ctx.strokeStyle = '#4caf50';
-            ctx.lineWidth = 3;
-            ctx.beginPath();
-            ctx.moveTo(this.track[0].x, this.track[0].y);
-            for (let i = 1; i < this.track.length; i++) {
-                ctx.lineTo(this.track[i].x, this.track[i].y);
-            }
-            ctx.stroke();
-        }
+        // No green track history line - removed
     }
 
     drawVehicleVector(x, y, heading) {
@@ -206,31 +208,35 @@ class Simulation {
             const width = this.canvas.width;
             const height = this.canvas.height;
             
-            // Match geometry with drawTrack: move up then right turn
-            const startX = width * 0.35;
-            const startY = height * 0.8;
-            const straightLength = height * 0.35;
+            // Match geometry with drawTrack: horizontal approach, then right turn
             const turnRadius = Math.min(width, height) * 0.2;
+            const approachLength = width * 0.35;
             const exitLength = width * 0.4;
             
-            const turnStartX = startX;
-            const turnStartY = startY - straightLength;
-            const turnCenterX = turnStartX + turnRadius;
-            const turnCenterY = turnStartY;
+            const turnCenterX = width * 0.35;
+            const turnCenterY = height * 0.6;
+            
+            const approachEndX = turnCenterX;
+            const approachEndY = turnCenterY + turnRadius;
+            const approachStartX = approachEndX - approachLength;
+            const approachStartY = approachEndY;
+            
             const turnAngleRad = (this.turnAngle * Math.PI) / 180;
-            const startAngle = Math.PI;
-            const endAngle = startAngle - turnAngleRad;
-            const exitDir = endAngle - Math.PI / 2;
+            const arcStartAngle = Math.PI / 2;
+            const arcEndAngle = arcStartAngle - turnAngleRad;
+            const exitDir = arcEndAngle - Math.PI / 2;
+            
             const arcLength = turnRadius * turnAngleRad;
-            const totalLength = straightLength + arcLength + exitLength;
+            const totalLength = approachLength + arcLength + exitLength;
             
             // Calculate progress thresholds based on actual lengths
-            const straightProgress = straightLength / totalLength;
+            const approachProgress = approachLength / totalLength;
             const turnProgress = arcLength / totalLength;
 
-            // Adjust animation duration based on speed to visually feel faster
+            // Adjust animation duration based on speed and sim speed multiplier
             const speedFactor = Math.max(0.25, Math.min(1, 80 / speedMPH));
-            const effectiveDuration = duration * speedFactor;
+            // Divide by simSpeedMultiplier so higher multiplier = faster animation
+            const effectiveDuration = (duration * speedFactor) / this.simSpeedMultiplier;
             this.setVisualSpeed(speedMPH);
             
             const animate = () => {
@@ -245,36 +251,30 @@ class Simulation {
                 // Calculate position along track
                 let x, y, rotation;
                 
-                if (progress < straightProgress) {
-                    // Straight section
-                    const straightProgressLocal = progress / straightProgress;
-                    x = startX;
-                    y = startY - straightLength * straightProgressLocal;
-                    rotation = -90;
-                } else if (progress < straightProgress + turnProgress) {
+                if (progress < approachProgress) {
+                    // Approach section (horizontal from left)
+                    const approachProgressLocal = progress / approachProgress;
+                    x = approachStartX + approachLength * approachProgressLocal;
+                    y = approachStartY;
+                    rotation = 0; // facing right
+                } else if (progress < approachProgress + turnProgress) {
                     // Turn section
-                    const turnProgressLocal = (progress - straightProgress) / turnProgress;
-                    const angle = startAngle - turnAngleRad * turnProgressLocal;
+                    const turnProgressLocal = (progress - approachProgress) / turnProgress;
+                    const angle = arcStartAngle - turnAngleRad * turnProgressLocal;
                     x = turnCenterX + Math.cos(angle) * turnRadius;
                     y = turnCenterY + Math.sin(angle) * turnRadius;
                     rotation = (angle - Math.PI / 2) * 180 / Math.PI;
                 } else {
                     // Exit section
-                    const exitProgressLocal = (progress - straightProgress - turnProgress) / (1 - straightProgress - turnProgress);
-                    const exitStartX = turnCenterX + Math.cos(endAngle) * turnRadius;
-                    const exitStartY = turnCenterY + Math.sin(endAngle) * turnRadius;
+                    const exitProgressLocal = (progress - approachProgress - turnProgress) / (1 - approachProgress - turnProgress);
+                    const exitStartX = turnCenterX + Math.cos(arcEndAngle) * turnRadius;
+                    const exitStartY = turnCenterY + Math.sin(arcEndAngle) * turnRadius;
                     x = exitStartX + Math.cos(exitDir) * exitLength * exitProgressLocal;
                     y = exitStartY + Math.sin(exitDir) * exitLength * exitProgressLocal;
-                    rotation = (exitDir) * 180 / Math.PI;
+                    rotation = exitDir * 180 / Math.PI;
                 }
                 
-                // Record track position
-                this.track.push({ x, y });
-                if (this.track.length > 1000) {
-                    this.track.shift();
-                }
-                
-                // Update display
+                // Update display (no track history recording)
                 this.drawTrack();
                 this.drawVehicleVector(x, y, (rotation + 90) * Math.PI / 180);
                 this.updateVehiclePosition(x, y, rotation);

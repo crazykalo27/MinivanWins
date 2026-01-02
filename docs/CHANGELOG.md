@@ -1,5 +1,25 @@
 # Vehicle Turn Simulation - Change Log
 
+## Speed Controls Update (Jan 2026)
+
+### Changes
+- **Speed Step Input**: Added number input (default 1) to set how many mph to increment between tests
+- **Simulation Speed Lights**: Added 6 lights with arrow controls for playback speed
+  - Level 1 (green): Very slow animation
+  - Level 6 (red): Very fast animation
+  - Click arrows or lights directly to change speed
+
+---
+
+## Track Geometry Fix (Jan 2026)
+
+### Changes
+- **Simplified track to single adjustable turn**: Track now has horizontal approach from left, single right-hand turn (adjustable 15-90°), and exit
+- **Removed green trajectory line**: No more path history drawn behind the vehicle
+- **Fixed confusing double-turn appearance**: Previous geometry created visual illusion of two turns
+
+---
+
 ## Initial Implementation
 
 ### Core Features
@@ -18,7 +38,7 @@
   - Adjustable turn angle (15-90 degrees)
   - Adjustable friction coefficient (0.3-1.2)
   - Right-hand turn simulation
-  - Visual track history showing vehicle path
+  - Clean track visualization without path trails
   - Catastrophic failure detection (spin-out or rollover)
 
 - **UI/UX**:

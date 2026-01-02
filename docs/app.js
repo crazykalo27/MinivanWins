@@ -13,8 +13,15 @@ const turnAngleSlider = document.getElementById('turnAngle');
 const turnAngleValue = document.getElementById('turnAngleValue');
 const frictionCoeffSlider = document.getElementById('frictionCoeff');
 const frictionCoeffValue = document.getElementById('frictionCoeffValue');
+const speedStepInput = document.getElementById('speedStep');
+const speedUpBtn = document.getElementById('speedUp');
+const speedDownBtn = document.getElementById('speedDown');
+const speedLights = document.querySelectorAll('.speed-light');
 const startBtn = document.getElementById('startBtn');
 const resetBtn = document.getElementById('resetBtn');
+
+// Simulation speed level (1-6): 1=slowest, 6=fastest
+let simSpeedLevel = 3; // Default to middle speed
 
 const corollaSpeedDisplay = document.getElementById('corollaSpeed');
 const corollaStatusDisplay = document.getElementById('corollaStatus');
@@ -41,6 +48,48 @@ frictionCoeffSlider.addEventListener('input', (e) => {
     caravanSim.setFrictionCoeff(mu);
 });
 
+// Speed lights update function
+function updateSpeedLights() {
+    speedLights.forEach((light, index) => {
+        const level = index + 1;
+        if (level <= simSpeedLevel) {
+            light.classList.add('active');
+        } else {
+            light.classList.remove('active');
+        }
+    });
+    // Update simulation speed multipliers
+    const speedMultipliers = [0.15, 0.35, 0.6, 1.0, 2.0, 4.0]; // 1=very slow, 6=very fast
+    const multiplier = speedMultipliers[simSpeedLevel - 1];
+    corollaSim.setSimSpeed(multiplier);
+    caravanSim.setSimSpeed(multiplier);
+}
+
+speedUpBtn.addEventListener('click', () => {
+    if (simSpeedLevel < 6) {
+        simSpeedLevel++;
+        updateSpeedLights();
+    }
+});
+
+speedDownBtn.addEventListener('click', () => {
+    if (simSpeedLevel > 1) {
+        simSpeedLevel--;
+        updateSpeedLights();
+    }
+});
+
+// Click on lights to set speed directly
+speedLights.forEach((light) => {
+    light.addEventListener('click', () => {
+        simSpeedLevel = parseInt(light.dataset.level);
+        updateSpeedLights();
+    });
+});
+
+// Initialize speed lights
+updateSpeedLights();
+
 startBtn.addEventListener('click', async () => {
     if (corollaSim.isRunning || caravanSim.isRunning) {
         return;
@@ -63,10 +112,13 @@ startBtn.addEventListener('click', async () => {
         }
     };
     
+    // Get speed step value from input
+    const speedStep = parseInt(speedStepInput.value) || 1;
+    
     // Run both simulations simultaneously
     const [corollaResult, caravanResult] = await Promise.all([
-        corollaSim.run(1, 150, (speed) => handleProgress('corolla', speed)),
-        caravanSim.run(1, 150, (speed) => handleProgress('caravan', speed))
+        corollaSim.run(speedStep, 150, (speed) => handleProgress('corolla', speed)),
+        caravanSim.run(speedStep, 150, (speed) => handleProgress('caravan', speed))
     ]);
     
     // Determine winner

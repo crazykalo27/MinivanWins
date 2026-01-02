@@ -26,6 +26,25 @@
                 <span id="frictionCoeffValue">0.7</span>
             </div>
             <div class="control-group">
+                <label for="speedStep">Speed Step (mph):</label>
+                <input type="number" id="speedStep" min="1" max="20" value="1" step="1" class="speed-step-input">
+            </div>
+            <div class="control-group speed-control-group">
+                <label>Sim Speed:</label>
+                <div class="speed-lights-container">
+                    <button class="speed-arrow speed-arrow-left" id="speedDown">◀</button>
+                    <div class="speed-lights">
+                        <div class="speed-light" data-level="1"></div>
+                        <div class="speed-light" data-level="2"></div>
+                        <div class="speed-light" data-level="3"></div>
+                        <div class="speed-light" data-level="4"></div>
+                        <div class="speed-light" data-level="5"></div>
+                        <div class="speed-light" data-level="6"></div>
+                    </div>
+                    <button class="speed-arrow speed-arrow-right" id="speedUp">▶</button>
+                </div>
+            </div>
+            <div class="control-group">
                 <button id="startBtn" class="btn btn-primary">Start Simulation</button>
                 <button id="resetBtn" class="btn btn-secondary">Reset</button>
             </div>
