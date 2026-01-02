@@ -20,6 +20,9 @@ const corollaSpeedDisplay = document.getElementById('corollaSpeed');
 const corollaStatusDisplay = document.getElementById('corollaStatus');
 const caravanSpeedDisplay = document.getElementById('caravanSpeed');
 const caravanStatusDisplay = document.getElementById('caravanStatus');
+const corollaAnalysis = document.getElementById('corollaAnalysis');
+const caravanAnalysis = document.getElementById('caravanAnalysis');
+const winnerSummary = document.getElementById('winnerSummary');
 
 // Event listeners
 turnAngleSlider.addEventListener('input', (e) => {
@@ -92,6 +95,11 @@ startBtn.addEventListener('click', async () => {
         caravanStatusDisplay.className = 'status-ready';
     }
     
+    // Analysis text
+    corollaAnalysis.textContent = buildVehicleAnalysis('Toyota Corolla', corollaResult);
+    caravanAnalysis.textContent = buildVehicleAnalysis('Dodge Caravan', caravanResult);
+    winnerSummary.textContent = buildWinnerSummary(winner, corollaResult, caravanResult);
+    
     corollaSpeedDisplay.textContent = corollaResult.speed.toFixed(1);
     caravanSpeedDisplay.textContent = caravanResult.speed.toFixed(1);
     
@@ -114,9 +122,37 @@ resetBtn.addEventListener('click', () => {
     caravanStatusDisplay.textContent = 'Ready';
     caravanStatusDisplay.className = 'status-ready';
     document.getElementById('fireworks-container').innerHTML = '';
+    corollaAnalysis.textContent = 'Adjust angle and friction, then start to see how the Corolla handles the turn.';
+    caravanAnalysis.textContent = 'Adjust angle and friction, then start to see how the Caravan handles the turn.';
+    winnerSummary.textContent = 'Run the simulation to see which vehicle wins and why.';
 });
 
 // Initialize displays
 corollaSpeedDisplay.textContent = '0';
 caravanSpeedDisplay.textContent = '0';
+
+function buildVehicleAnalysis(name, result) {
+    if (!result.hasFailed) {
+        return `${name} completed the turn. Top tested speed: ${result.speed.toFixed(1)} mph.`;
+    }
+    
+    const failure = result.failureType === 'spin-out' ? 'lost grip (spin-out)' : 'rolled over (stability limit)';
+    return `${name} ${failure} at ${result.speed.toFixed(1)} mph.`;
+}
+
+function buildWinnerSummary(winner, corollaResult, caravanResult) {
+    if (!winner) return 'Run the simulation to see which vehicle wins and why.';
+    
+    if (winner.includes('Tie')) {
+        return 'Both vehicles failed at similar thresholds—no clear winner.';
+    }
+    
+    if (winner.includes('Both')) {
+        return 'Both vehicles completed successfully through the tested speed range.';
+    }
+    
+    const corollaSpeed = corollaResult.speed.toFixed(1);
+    const caravanSpeed = caravanResult.speed.toFixed(1);
+    return `${winner} wins by sustaining a higher survivable speed: Corolla ${corollaSpeed} mph vs Caravan ${caravanSpeed} mph.`;
+}
 

@@ -52,7 +52,7 @@ class Simulation {
         
         ctx.clearRect(0, 0, width, height);
         
-        // Draw background
+        // Background
         ctx.fillStyle = '#f5f5f5';
         ctx.fillRect(0, 0, width, height);
         
@@ -61,81 +61,58 @@ class Simulation {
         const roadWidth = 120;
         const straightLength = width * 0.35;
         const turnRadius = Math.min(width * 0.25, height * 0.25);
-        const exitLength = width * 0.3;
+        const exitLength = width * 0.35;
         
-        // Calculate turn geometry
+        // Geometry
         const turnStartX = straightLength;
         const turnCenterX = turnStartX + turnRadius;
         const turnCenterY = centerY;
-        
-        // Convert turn angle to radians
         const turnAngleRad = (this.turnAngle * Math.PI) / 180;
-        const startAngle = -Math.PI / 2; // Start pointing down (south)
+        const startAngle = -Math.PI / 2;
         const endAngle = startAngle + turnAngleRad;
-        
-        // Calculate exit section start point (end of turn arc)
         const exitStartX = turnCenterX + Math.cos(endAngle) * turnRadius;
         const exitStartY = turnCenterY + Math.sin(endAngle) * turnRadius;
-        
-        // Calculate perpendicular vector for road width offset
-        // For angle θ, perpendicular vector pointing right is (-sin(θ), cos(θ))
-        const perpX = -Math.sin(endAngle);
-        const perpY = Math.cos(endAngle);
-        const offsetX = perpX * roadWidth / 2;
-        const offsetY = perpY * roadWidth / 2;
-        
-        // Calculate exit section end point
         const exitEndX = exitStartX + Math.cos(endAngle) * exitLength;
         const exitEndY = exitStartY + Math.sin(endAngle) * exitLength;
         
-        // Draw road as a continuous path
-        ctx.fillStyle = '#333';
-        ctx.beginPath();
-        
-        // Start with straight section (left edge)
-        ctx.moveTo(0, centerY - roadWidth / 2);
-        ctx.lineTo(turnStartX, centerY - roadWidth / 2);
-        
-        // Connect to outer arc of turn
-        ctx.arc(turnCenterX, turnCenterY, turnRadius + roadWidth / 2, startAngle, endAngle, false);
-        
-        // Continue to exit section (outer edge - right side of exit road)
-        ctx.lineTo(exitEndX + offsetX, exitEndY + offsetY);
-        
-        // Draw exit section (inner edge - left side of exit road)
-        ctx.lineTo(exitStartX + offsetX, exitStartY + offsetY);
-        
-        // Connect to inner arc of turn
-        ctx.arc(turnCenterX, turnCenterY, turnRadius - roadWidth / 2, endAngle, startAngle, true);
-        
-        // Close back to start of straight section (right edge)
-        ctx.lineTo(0, centerY + roadWidth / 2);
-        ctx.closePath();
-        ctx.fill();
-        
-        // Draw lane markings
-        ctx.strokeStyle = '#ffd700';
-        ctx.lineWidth = 2;
-        ctx.setLineDash([10, 10]);
-        
-        // Straight section lane marking
+        // Draw road using a wide stroke along the centerline for smooth joins
+        ctx.save();
+        ctx.strokeStyle = '#333';
+        ctx.lineWidth = roadWidth;
+        ctx.lineCap = 'butt';
+        ctx.lineJoin = 'round';
         ctx.beginPath();
         ctx.moveTo(0, centerY);
         ctx.lineTo(turnStartX, centerY);
-        ctx.stroke();
-        
-        // Turn section lane marking
-        ctx.beginPath();
         ctx.arc(turnCenterX, turnCenterY, turnRadius, startAngle, endAngle, false);
-        ctx.stroke();
-        
-        // Exit section lane marking
-        ctx.beginPath();
-        ctx.moveTo(exitStartX, exitStartY);
         ctx.lineTo(exitEndX, exitEndY);
         ctx.stroke();
+        ctx.restore();
         
-        ctx.setLineDash([]);
+        // Lane marking (center dashed line)
+        ctx.save();
+        ctx.strokeStyle = '#ffd700';
+        ctx.lineWidth = 4;
+        ctx.setLineDash([18, 12]);
+        ctx.beginPath();
+        ctx.moveTo(0, centerY);
+        ctx.lineTo(turnStartX, centerY);
+        ctx.arc(turnCenterX, turnCenterY, turnRadius, startAngle, endAngle, false);
+        ctx.lineTo(exitEndX, exitEndY);
+        ctx.stroke();
+        ctx.restore();
+        
+        // Direction arrows along the lane to give a clearer vector cue
+        this.drawVectorArrows({
+            centerY,
+            straightLength,
+            turnRadius,
+            exitLength,
+            turnCenterX,
+            turnCenterY,
+            startAngle,
+            endAngle
+        });
         
         // Draw track history
         if (this.track.length > 0) {
@@ -148,6 +125,74 @@ class Simulation {
             }
             ctx.stroke();
         }
+    }
+
+    drawVectorArrows(geometry) {
+        const { centerY, straightLength, turnRadius, exitLength, turnCenterX, turnCenterY, startAngle, endAngle } = geometry;
+        const ctx = this.ctx;
+        
+        // Helper to sample a point and heading along the lane centerline by progress (0..1)
+        const sample = (progress) => {
+            const arcLength = turnRadius * (endAngle - startAngle);
+            const totalLength = straightLength + arcLength + exitLength;
+            const straightThreshold = straightLength / totalLength;
+            const turnThreshold = arcLength / totalLength;
+            
+            if (progress < straightThreshold) {
+                const local = progress / straightThreshold;
+                return { 
+                    x: straightLength * local, 
+                    y: centerY, 
+                    heading: 0 
+                };
+            } else if (progress < straightThreshold + turnThreshold) {
+                const local = (progress - straightThreshold) / turnThreshold;
+                const angle = startAngle + (endAngle - startAngle) * local;
+                return {
+                    x: turnCenterX + Math.cos(angle) * turnRadius,
+                    y: turnCenterY + Math.sin(angle) * turnRadius,
+                    heading: angle + Math.PI / 2 // tangent to the arc
+                };
+            } else {
+                const local = (progress - straightThreshold - turnThreshold) / (1 - straightThreshold - turnThreshold);
+                const exitStartX = turnCenterX + Math.cos(endAngle) * turnRadius;
+                const exitStartY = turnCenterY + Math.sin(endAngle) * turnRadius;
+                return {
+                    x: exitStartX + Math.cos(endAngle) * exitLength * local,
+                    y: exitStartY + Math.sin(endAngle) * exitLength * local,
+                    heading: endAngle
+                };
+            }
+        };
+        
+        // Draw a few arrows along the path
+        const arrowPositions = [0.2, 0.55, 0.85];
+        ctx.save();
+        ctx.fillStyle = '#ffd700';
+        ctx.strokeStyle = '#ffd700';
+        arrowPositions.forEach(pos => {
+            const { x, y, heading } = sample(pos);
+            this.drawArrow(ctx, x, y, heading);
+        });
+        ctx.restore();
+    }
+
+    drawArrow(ctx, x, y, heading) {
+        const size = 18;
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.rotate(heading);
+        ctx.beginPath();
+        ctx.moveTo(-size, 0);
+        ctx.lineTo(size, 0);
+        ctx.moveTo(size, 0);
+        ctx.lineTo(size - 8, -6);
+        ctx.moveTo(size, 0);
+        ctx.lineTo(size - 8, 6);
+        ctx.lineWidth = 3;
+        ctx.strokeStyle = '#ffd700';
+        ctx.stroke();
+        ctx.restore();
     }
 
     updateVehiclePosition(x, y, rotation) {
@@ -214,7 +259,7 @@ class Simulation {
             // Match geometry with drawTrack
             const straightLength = width * 0.35;
             const turnRadius = Math.min(width * 0.25, height * 0.25);
-            const exitLength = width * 0.3;
+            const exitLength = width * 0.35;
             const turnStartX = straightLength;
             const turnCenterX = turnStartX + turnRadius;
             const turnCenterY = centerY;
