@@ -54,6 +54,9 @@ trackRadiusSlider.addEventListener('input', (e) => {
     const radius = parseInt(e.target.value);
     trackRadiusValue.textContent = `${radius} ft`;
     physicsEngine.setTrackRadius(radius);
+    // Update visual track representation
+    corollaSim.setTrackRadius();
+    caravanSim.setTrackRadius();
 });
 
 // Failure mode checkboxes

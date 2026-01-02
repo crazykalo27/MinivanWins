@@ -41,6 +41,13 @@ class Simulation {
         this.simSpeedMultiplier = multiplier;
     }
 
+    setTrackRadius() {
+        // Redraw track when radius changes
+        if (!this.isRunning) {
+            this.drawTrack();
+        }
+    }
+
     reset() {
         // Signal to stop any running simulation
         this.shouldStop = true;
@@ -69,7 +76,20 @@ class Simulation {
         
         // Road parameters
         const roadWidth = 120;
-        const turnRadius = Math.min(width, height) * 0.2;
+        
+        // Get physics track radius and scale it visually
+        // Reference: 75 ft physics radius = 20% of canvas size visually
+        const physicsRadiusFeet = this.physics.trackRadiusFeet;
+        const referencePhysicsRadius = 75; // feet
+        const referenceVisualRadius = Math.min(width, height) * 0.2; // pixels
+        const scaleFactor = referenceVisualRadius / referencePhysicsRadius;
+        const turnRadius = physicsRadiusFeet * scaleFactor;
+        
+        // Ensure minimum visual size for visibility
+        const minVisualRadius = Math.min(width, height) * 0.1;
+        const maxVisualRadius = Math.min(width, height) * 0.45;
+        const visualRadius = Math.max(minVisualRadius, Math.min(maxVisualRadius, turnRadius));
+        
         const approachLength = width * 0.35;
         const exitLength = width * 0.4;
         
@@ -80,7 +100,7 @@ class Simulation {
         
         // Approach: horizontal from left, ending at bottom of turn arc
         const approachEndX = turnCenterX;
-        const approachEndY = turnCenterY + turnRadius;
+        const approachEndY = turnCenterY + visualRadius;
         const approachStartX = approachEndX - approachLength;
         const approachStartY = approachEndY;
         
@@ -90,8 +110,8 @@ class Simulation {
         const arcEndAngle = arcStartAngle - turnAngleRad; // sweep counterclockwise
         
         // Exit: continue tangent from end of arc
-        const exitStartX = turnCenterX + Math.cos(arcEndAngle) * turnRadius;
-        const exitStartY = turnCenterY + Math.sin(arcEndAngle) * turnRadius;
+        const exitStartX = turnCenterX + Math.cos(arcEndAngle) * visualRadius;
+        const exitStartY = turnCenterY + Math.sin(arcEndAngle) * visualRadius;
         const exitDir = arcEndAngle - Math.PI / 2; // tangent direction
         const exitEndX = exitStartX + Math.cos(exitDir) * exitLength;
         const exitEndY = exitStartY + Math.sin(exitDir) * exitLength;
@@ -105,7 +125,7 @@ class Simulation {
         ctx.beginPath();
         ctx.moveTo(approachStartX, approachStartY);
         ctx.lineTo(approachEndX, approachEndY);
-        ctx.arc(turnCenterX, turnCenterY, turnRadius, arcStartAngle, arcEndAngle, true);
+        ctx.arc(turnCenterX, turnCenterY, visualRadius, arcStartAngle, arcEndAngle, true);
         ctx.lineTo(exitEndX, exitEndY);
         ctx.stroke();
         ctx.restore();
@@ -118,9 +138,21 @@ class Simulation {
         ctx.beginPath();
         ctx.moveTo(approachStartX, approachStartY);
         ctx.lineTo(approachEndX, approachEndY);
-        ctx.arc(turnCenterX, turnCenterY, turnRadius, arcStartAngle, arcEndAngle, true);
+        ctx.arc(turnCenterX, turnCenterY, visualRadius, arcStartAngle, arcEndAngle, true);
         ctx.lineTo(exitEndX, exitEndY);
         ctx.stroke();
+        ctx.restore();
+        
+        // Display track radius label
+        ctx.save();
+        ctx.fillStyle = '#666';
+        ctx.font = 'bold 14px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText(
+            `Track Radius: ${this.physics.trackRadiusFeet} ft`,
+            width / 2,
+            30
+        );
         ctx.restore();
         
         // No green track history line - removed
@@ -276,7 +308,15 @@ class Simulation {
             const height = this.canvas.height;
             
             // Match geometry with drawTrack: horizontal approach, then right turn
-            const turnRadius = Math.min(width, height) * 0.2;
+            // Use same scaling as drawTrack
+            const physicsRadiusFeet = this.physics.trackRadiusFeet;
+            const referencePhysicsRadius = 75; // feet
+            const referenceVisualRadius = Math.min(width, height) * 0.2; // pixels
+            const scaleFactor = referenceVisualRadius / referencePhysicsRadius;
+            const turnRadiusRaw = physicsRadiusFeet * scaleFactor;
+            const minVisualRadius = Math.min(width, height) * 0.1;
+            const maxVisualRadius = Math.min(width, height) * 0.45;
+            const turnRadius = Math.max(minVisualRadius, Math.min(maxVisualRadius, turnRadiusRaw));
             const approachLength = width * 0.35;
             const exitLength = width * 0.4;
             
