@@ -43,6 +43,7 @@ class Simulation {
         this.track = [];
         this.drawTrack();
         this.updateVehiclePosition(0, 0, 0);
+        this.setVisualSpeed(0);
     }
 
     drawTrack() {
@@ -57,23 +58,26 @@ class Simulation {
         ctx.fillRect(0, 0, width, height);
         
         // Road parameters
-        const centerY = height / 2;
         const roadWidth = 120;
-        const straightLength = width * 0.35;
-        const turnRadius = Math.min(width * 0.25, height * 0.25);
-        const exitLength = width * 0.35;
+        const startX = width * 0.35;
+        const startY = height * 0.8;
+        const straightLength = height * 0.35;
+        const turnRadius = Math.min(width, height) * 0.2;
+        const exitLength = width * 0.4;
         
-        // Geometry
-        const turnStartX = straightLength;
+        // Geometry: move up, then right turn (variable angle), then exit rightward
+        const turnStartX = startX;
+        const turnStartY = startY - straightLength;
         const turnCenterX = turnStartX + turnRadius;
-        const turnCenterY = centerY;
+        const turnCenterY = turnStartY;
         const turnAngleRad = (this.turnAngle * Math.PI) / 180;
-        const startAngle = -Math.PI / 2;
-        const endAngle = startAngle + turnAngleRad;
+        const startAngle = Math.PI; // start on left of center (tangent up)
+        const endAngle = startAngle - turnAngleRad; // sweep anticlockwise to turn right
         const exitStartX = turnCenterX + Math.cos(endAngle) * turnRadius;
         const exitStartY = turnCenterY + Math.sin(endAngle) * turnRadius;
-        const exitEndX = exitStartX + Math.cos(endAngle) * exitLength;
-        const exitEndY = exitStartY + Math.sin(endAngle) * exitLength;
+        const exitDir = endAngle - Math.PI / 2; // tangent direction after turn
+        const exitEndX = exitStartX + Math.cos(exitDir) * exitLength;
+        const exitEndY = exitStartY + Math.sin(exitDir) * exitLength;
         
         // Draw road using a wide stroke along the centerline for smooth joins
         ctx.save();
@@ -82,9 +86,9 @@ class Simulation {
         ctx.lineCap = 'butt';
         ctx.lineJoin = 'round';
         ctx.beginPath();
-        ctx.moveTo(0, centerY);
-        ctx.lineTo(turnStartX, centerY);
-        ctx.arc(turnCenterX, turnCenterY, turnRadius, startAngle, endAngle, false);
+        ctx.moveTo(startX, startY);
+        ctx.lineTo(turnStartX, turnStartY);
+        ctx.arc(turnCenterX, turnCenterY, turnRadius, startAngle, endAngle, true);
         ctx.lineTo(exitEndX, exitEndY);
         ctx.stroke();
         ctx.restore();
@@ -95,24 +99,12 @@ class Simulation {
         ctx.lineWidth = 4;
         ctx.setLineDash([18, 12]);
         ctx.beginPath();
-        ctx.moveTo(0, centerY);
-        ctx.lineTo(turnStartX, centerY);
-        ctx.arc(turnCenterX, turnCenterY, turnRadius, startAngle, endAngle, false);
+        ctx.moveTo(startX, startY);
+        ctx.lineTo(turnStartX, turnStartY);
+        ctx.arc(turnCenterX, turnCenterY, turnRadius, startAngle, endAngle, true);
         ctx.lineTo(exitEndX, exitEndY);
         ctx.stroke();
         ctx.restore();
-        
-        // Direction arrows along the lane to give a clearer vector cue
-        this.drawVectorArrows({
-            centerY,
-            straightLength,
-            turnRadius,
-            exitLength,
-            turnCenterX,
-            turnCenterY,
-            startAngle,
-            endAngle
-        });
         
         // Draw track history
         if (this.track.length > 0) {
@@ -127,72 +119,29 @@ class Simulation {
         }
     }
 
-    drawVectorArrows(geometry) {
-        const { centerY, straightLength, turnRadius, exitLength, turnCenterX, turnCenterY, startAngle, endAngle } = geometry;
+    drawVehicleVector(x, y, heading) {
         const ctx = this.ctx;
-        
-        // Helper to sample a point and heading along the lane centerline by progress (0..1)
-        const sample = (progress) => {
-            const arcLength = turnRadius * (endAngle - startAngle);
-            const totalLength = straightLength + arcLength + exitLength;
-            const straightThreshold = straightLength / totalLength;
-            const turnThreshold = arcLength / totalLength;
-            
-            if (progress < straightThreshold) {
-                const local = progress / straightThreshold;
-                return { 
-                    x: straightLength * local, 
-                    y: centerY, 
-                    heading: 0 
-                };
-            } else if (progress < straightThreshold + turnThreshold) {
-                const local = (progress - straightThreshold) / turnThreshold;
-                const angle = startAngle + (endAngle - startAngle) * local;
-                return {
-                    x: turnCenterX + Math.cos(angle) * turnRadius,
-                    y: turnCenterY + Math.sin(angle) * turnRadius,
-                    heading: angle + Math.PI / 2 // tangent to the arc
-                };
-            } else {
-                const local = (progress - straightThreshold - turnThreshold) / (1 - straightThreshold - turnThreshold);
-                const exitStartX = turnCenterX + Math.cos(endAngle) * turnRadius;
-                const exitStartY = turnCenterY + Math.sin(endAngle) * turnRadius;
-                return {
-                    x: exitStartX + Math.cos(endAngle) * exitLength * local,
-                    y: exitStartY + Math.sin(endAngle) * exitLength * local,
-                    heading: endAngle
-                };
-            }
-        };
-        
-        // Draw a few arrows along the path
-        const arrowPositions = [0.2, 0.55, 0.85];
-        ctx.save();
-        ctx.fillStyle = '#ffd700';
-        ctx.strokeStyle = '#ffd700';
-        arrowPositions.forEach(pos => {
-            const { x, y, heading } = sample(pos);
-            this.drawArrow(ctx, x, y, heading);
-        });
-        ctx.restore();
-    }
-
-    drawArrow(ctx, x, y, heading) {
-        const size = 18;
+        const size = 26;
         ctx.save();
         ctx.translate(x, y);
         ctx.rotate(heading);
-        ctx.beginPath();
-        ctx.moveTo(-size, 0);
-        ctx.lineTo(size, 0);
-        ctx.moveTo(size, 0);
-        ctx.lineTo(size - 8, -6);
-        ctx.moveTo(size, 0);
-        ctx.lineTo(size - 8, 6);
-        ctx.lineWidth = 3;
         ctx.strokeStyle = '#ffd700';
+        ctx.lineWidth = 4;
+        ctx.lineCap = 'round';
+        ctx.beginPath();
+        ctx.moveTo(-size * 0.6, 0);
+        ctx.lineTo(size * 0.6, 0);
+        ctx.moveTo(size * 0.6, 0);
+        ctx.lineTo(size * 0.3, -8);
+        ctx.moveTo(size * 0.6, 0);
+        ctx.lineTo(size * 0.3, 8);
         ctx.stroke();
         ctx.restore();
+    }
+
+    setVisualSpeed(speedMPH) {
+        const blurPx = Math.min(3, speedMPH / 40);
+        this.vehicleImage.style.filter = `blur(${blurPx}px)`;
     }
 
     updateVehiclePosition(x, y, rotation) {
@@ -209,7 +158,7 @@ class Simulation {
         this.vehicleImage.style.transform = `translate(-50%, -50%) rotate(${rotation}deg)`;
     }
 
-    async run(speedIncrement = 1, maxSpeed = 150) {
+    async run(speedIncrement = 1, maxSpeed = 150, progressCb) {
         this.isRunning = true;
         this.hasFailed = false;
         this.track = [];
@@ -221,6 +170,7 @@ class Simulation {
         const frameTime = 1000 / frameRate;
         
         while (currentSpeed <= maxSpeed && !this.hasFailed) {
+            if (progressCb) progressCb(currentSpeed, 0);
             const analysis = this.physics.analyzeFailure(this.vehicle, currentSpeed, this.turnAngle);
             
             if (analysis.hasFailed) {
@@ -232,7 +182,7 @@ class Simulation {
             }
             
             // Animate vehicle through turn at this speed
-            await this.animateTurn(currentSpeed, animationDuration);
+            await this.animateTurn(currentSpeed, animationDuration, progressCb);
             
             currentSpeed += speedIncrement;
         }
@@ -242,6 +192,7 @@ class Simulation {
         }
         
         this.isRunning = false;
+        this.setVisualSpeed(0);
         return {
             hasFailed: this.hasFailed,
             failureType: this.failureType,
@@ -249,32 +200,38 @@ class Simulation {
         };
     }
 
-    async animateTurn(speedMPH, duration) {
+    async animateTurn(speedMPH, duration, progressCb) {
         return new Promise((resolve) => {
             const startTime = Date.now();
             const width = this.canvas.width;
             const height = this.canvas.height;
-            const centerY = height / 2;
             
-            // Match geometry with drawTrack
-            const straightLength = width * 0.35;
-            const turnRadius = Math.min(width * 0.25, height * 0.25);
-            const exitLength = width * 0.35;
-            const turnStartX = straightLength;
+            // Match geometry with drawTrack: move up then right turn
+            const startX = width * 0.35;
+            const startY = height * 0.8;
+            const straightLength = height * 0.35;
+            const turnRadius = Math.min(width, height) * 0.2;
+            const exitLength = width * 0.4;
+            
+            const turnStartX = startX;
+            const turnStartY = startY - straightLength;
             const turnCenterX = turnStartX + turnRadius;
-            const turnCenterY = centerY;
-            
-            // Calculate arc length for turn (for proportional timing)
+            const turnCenterY = turnStartY;
             const turnAngleRad = (this.turnAngle * Math.PI) / 180;
+            const startAngle = Math.PI;
+            const endAngle = startAngle - turnAngleRad;
+            const exitDir = endAngle - Math.PI / 2;
             const arcLength = turnRadius * turnAngleRad;
             const totalLength = straightLength + arcLength + exitLength;
             
             // Calculate progress thresholds based on actual lengths
             const straightProgress = straightLength / totalLength;
             const turnProgress = arcLength / totalLength;
-            
-            const startAngle = -Math.PI / 2;
-            const endAngle = startAngle + turnAngleRad;
+
+            // Adjust animation duration based on speed to visually feel faster
+            const speedFactor = Math.max(0.25, Math.min(1, 80 / speedMPH));
+            const effectiveDuration = duration * speedFactor;
+            this.setVisualSpeed(speedMPH);
             
             const animate = () => {
                 if (this.hasFailed) {
@@ -283,7 +240,7 @@ class Simulation {
                 }
                 
                 const elapsed = Date.now() - startTime;
-                const progress = Math.min(elapsed / duration, 1);
+                const progress = Math.min(elapsed / effectiveDuration, 1);
                 
                 // Calculate position along track
                 let x, y, rotation;
@@ -291,24 +248,24 @@ class Simulation {
                 if (progress < straightProgress) {
                     // Straight section
                     const straightProgressLocal = progress / straightProgress;
-                    x = straightLength * straightProgressLocal;
-                    y = centerY;
-                    rotation = 0;
+                    x = startX;
+                    y = startY - straightLength * straightProgressLocal;
+                    rotation = -90;
                 } else if (progress < straightProgress + turnProgress) {
                     // Turn section
                     const turnProgressLocal = (progress - straightProgress) / turnProgress;
-                    const angle = startAngle + turnAngleRad * turnProgressLocal;
+                    const angle = startAngle - turnAngleRad * turnProgressLocal;
                     x = turnCenterX + Math.cos(angle) * turnRadius;
                     y = turnCenterY + Math.sin(angle) * turnRadius;
-                    rotation = (this.turnAngle * turnProgressLocal) - 90;
+                    rotation = (angle - Math.PI / 2) * 180 / Math.PI;
                 } else {
                     // Exit section
                     const exitProgressLocal = (progress - straightProgress - turnProgress) / (1 - straightProgress - turnProgress);
                     const exitStartX = turnCenterX + Math.cos(endAngle) * turnRadius;
                     const exitStartY = turnCenterY + Math.sin(endAngle) * turnRadius;
-                    x = exitStartX + Math.cos(endAngle) * exitLength * exitProgressLocal;
-                    y = exitStartY + Math.sin(endAngle) * exitLength * exitProgressLocal;
-                    rotation = this.turnAngle - 90;
+                    x = exitStartX + Math.cos(exitDir) * exitLength * exitProgressLocal;
+                    y = exitStartY + Math.sin(exitDir) * exitLength * exitProgressLocal;
+                    rotation = (exitDir) * 180 / Math.PI;
                 }
                 
                 // Record track position
@@ -319,7 +276,9 @@ class Simulation {
                 
                 // Update display
                 this.drawTrack();
+                this.drawVehicleVector(x, y, (rotation + 90) * Math.PI / 180);
                 this.updateVehiclePosition(x, y, rotation);
+                if (progressCb) progressCb(speedMPH, progress);
                 
                 if (progress < 1 && !this.hasFailed) {
                     requestAnimationFrame(animate);

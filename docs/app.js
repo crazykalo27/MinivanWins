@@ -23,6 +23,7 @@ const caravanStatusDisplay = document.getElementById('caravanStatus');
 const corollaAnalysis = document.getElementById('corollaAnalysis');
 const caravanAnalysis = document.getElementById('caravanAnalysis');
 const winnerSummary = document.getElementById('winnerSummary');
+const currentSpeedDisplay = document.getElementById('currentSpeedDisplay');
 
 // Event listeners
 turnAngleSlider.addEventListener('input', (e) => {
@@ -53,10 +54,19 @@ startBtn.addEventListener('click', async () => {
     caravanStatusDisplay.textContent = 'Running';
     caravanStatusDisplay.className = 'status-running';
     
+    const handleProgress = (vehicle, speed) => {
+        currentSpeedDisplay.textContent = `Current test speed: ${speed.toFixed(1)} mph`;
+        if (vehicle === 'corolla') {
+            corollaSpeedDisplay.textContent = speed.toFixed(1);
+        } else {
+            caravanSpeedDisplay.textContent = speed.toFixed(1);
+        }
+    };
+    
     // Run both simulations simultaneously
     const [corollaResult, caravanResult] = await Promise.all([
-        corollaSim.run(1, 150),
-        caravanSim.run(1, 150)
+        corollaSim.run(1, 150, (speed) => handleProgress('corolla', speed)),
+        caravanSim.run(1, 150, (speed) => handleProgress('caravan', speed))
     ]);
     
     // Determine winner
@@ -125,6 +135,7 @@ resetBtn.addEventListener('click', () => {
     corollaAnalysis.textContent = 'Adjust angle and friction, then start to see how the Corolla handles the turn.';
     caravanAnalysis.textContent = 'Adjust angle and friction, then start to see how the Caravan handles the turn.';
     winnerSummary.textContent = 'Run the simulation to see which vehicle wins and why.';
+    currentSpeedDisplay.textContent = 'Current test speed: 0 mph';
 });
 
 // Initialize displays
