@@ -16,21 +16,25 @@
 
         <div class="controls-panel">
             <div class="control-group">
-                <label for="turnAngle">Turn Angle (degrees):</label>
-                <input type="range" id="turnAngle" min="15" max="90" value="45" step="5">
-                <span id="turnAngleValue">45°</span>
+                <label for="turnAngle">Turn Angle</label>
+                <div class="control-row">
+                    <input type="range" id="turnAngle" min="15" max="90" value="45" step="5">
+                    <span class="value-display" id="turnAngleValue">45°</span>
+                </div>
             </div>
             <div class="control-group">
-                <label for="frictionCoeff">Friction Coefficient (μ):</label>
-                <input type="range" id="frictionCoeff" min="0.3" max="1.2" value="0.7" step="0.1">
-                <span id="frictionCoeffValue">0.7</span>
+                <label for="frictionCoeff">Friction (μ)</label>
+                <div class="control-row">
+                    <input type="range" id="frictionCoeff" min="0.3" max="1.2" value="0.7" step="0.1">
+                    <span class="value-display" id="frictionCoeffValue">0.7</span>
+                </div>
             </div>
             <div class="control-group">
-                <label for="speedStep">Speed Step (mph):</label>
-                <input type="number" id="speedStep" min="1" max="20" value="1" step="1" class="speed-step-input">
+                <label for="speedStep">Speed Step (mph)</label>
+                <input type="number" id="speedStep" min="0.001" value="1" step="any" class="speed-step-input">
             </div>
             <div class="control-group speed-control-group">
-                <label>Sim Speed:</label>
+                <label>Simulation Speed</label>
                 <div class="speed-lights-container">
                     <button class="speed-arrow speed-arrow-left" id="speedDown">◀</button>
                     <div class="speed-lights">
@@ -44,9 +48,12 @@
                     <button class="speed-arrow speed-arrow-right" id="speedUp">▶</button>
                 </div>
             </div>
-            <div class="control-group">
-                <button id="startBtn" class="btn btn-primary">Start Simulation</button>
-                <button id="resetBtn" class="btn btn-secondary">Reset</button>
+            <div class="control-group buttons-group">
+                <label>Actions</label>
+                <div class="control-row buttons-row">
+                    <button id="startBtn" class="btn btn-primary">Start</button>
+                    <button id="resetBtn" class="btn btn-secondary">Reset</button>
+                </div>
             </div>
         </div>
 

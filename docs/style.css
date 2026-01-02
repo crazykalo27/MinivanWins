@@ -44,29 +44,37 @@ h1 {
 
 .controls-panel {
     background: rgba(255, 255, 255, 0.95);
-    padding: 25px;
+    padding: 30px;
     border-radius: 15px;
     margin-bottom: 30px;
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-    display: flex;
-    flex-wrap: wrap;
-    gap: 25px;
-    align-items: center;
-    justify-content: center;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 24px 32px;
 }
 
 .control-group {
     display: flex;
-    align-items: center;
-    gap: 15px;
-    flex: 1;
-    min-width: 250px;
+    flex-direction: column;
+    gap: 10px;
+    padding: 16px 20px;
+    background: #fafafa;
+    border-radius: 12px;
+    border: 1px solid #e8e8e8;
 }
 
 .control-group label {
     font-weight: 600;
-    color: #333;
-    min-width: 150px;
+    color: #555;
+    font-size: 0.9em;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.control-group .control-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
 }
 
 input[type="range"] {
@@ -76,6 +84,7 @@ input[type="range"] {
     background: #e0e0e0;
     outline: none;
     -webkit-appearance: none;
+    min-width: 120px;
 }
 
 input[type="range"]::-webkit-slider-thumb {
@@ -105,18 +114,24 @@ input[type="range"]::-moz-range-thumb {
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
 }
 
-.control-group span {
+.control-group span.value-display {
     font-weight: bold;
     color: #4caf50;
-    min-width: 60px;
-    text-align: right;
+    font-size: 1.1em;
+    min-width: 50px;
+    text-align: center;
+    background: white;
+    padding: 6px 12px;
+    border-radius: 6px;
+    border: 1px solid #e0e0e0;
 }
 
 /* Speed Step Input */
 .speed-step-input {
-    width: 70px;
-    padding: 8px 12px;
-    font-size: 1em;
+    width: 100%;
+    max-width: 100px;
+    padding: 10px 14px;
+    font-size: 1.1em;
     font-weight: 600;
     border: 2px solid #e0e0e0;
     border-radius: 8px;
@@ -132,17 +147,28 @@ input[type="range"]::-moz-range-thumb {
     box-shadow: 0 0 8px rgba(255, 107, 53, 0.3);
 }
 
+/* Remove spinner arrows from number input */
+.speed-step-input::-webkit-inner-spin-button,
+.speed-step-input::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+.speed-step-input[type=number] {
+    -moz-appearance: textfield;
+}
+
 /* Simulation Speed Lights */
 .speed-control-group {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 8px !important;
+    align-items: stretch;
 }
 
 .speed-lights-container {
     display: flex;
     align-items: center;
-    gap: 8px;
+    justify-content: center;
+    gap: 10px;
+    margin-top: 4px;
 }
 
 .speed-arrow {
@@ -223,9 +249,24 @@ input[type="range"]::-moz-range-thumb {
     border-color: #b71c1c;
 }
 
+/* Buttons group */
+.buttons-group {
+    justify-content: space-between;
+}
+
+.buttons-row {
+    display: flex;
+    gap: 12px;
+    width: 100%;
+}
+
+.buttons-row .btn {
+    flex: 1;
+}
+
 .btn {
-    padding: 12px 30px;
-    font-size: 1.1em;
+    padding: 12px 24px;
+    font-size: 1em;
     font-weight: 600;
     border: none;
     border-radius: 25px;
@@ -392,6 +433,22 @@ canvas {
 @media (max-width: 1200px) {
     .simulation-container {
         grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 768px) {
+    .controls-panel {
+        grid-template-columns: 1fr;
+        padding: 20px;
+        gap: 16px;
+    }
+    
+    .control-group {
+        padding: 14px 16px;
+    }
+    
+    h1 {
+        font-size: 1.8em;
     }
 }
 

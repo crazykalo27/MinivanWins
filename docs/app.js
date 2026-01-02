@@ -112,8 +112,8 @@ startBtn.addEventListener('click', async () => {
         }
     };
     
-    // Get speed step value from input
-    const speedStep = parseInt(speedStepInput.value) || 1;
+    // Get speed step value from input (allow decimals)
+    const speedStep = parseFloat(speedStepInput.value) || 1;
     
     // Run both simulations simultaneously
     const [corollaResult, caravanResult] = await Promise.all([
