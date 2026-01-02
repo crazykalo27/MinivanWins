@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vehicle Turn Simulation - Corolla vs Caravan</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🚗 Vehicle Turn Simulation 🚐</h1>
+            <p class="subtitle">Toyota Corolla (2004) vs Dodge Caravan (2016)</p>
+        </header>
+
+        <div class="controls-panel">
+            <div class="control-group">
+                <label for="turnAngle">Turn Angle (degrees):</label>
+                <input type="range" id="turnAngle" min="15" max="90" value="45" step="5">
+                <span id="turnAngleValue">45°</span>
+            </div>
+            <div class="control-group">
+                <label for="frictionCoeff">Friction Coefficient (μ):</label>
+                <input type="range" id="frictionCoeff" min="0.3" max="1.2" value="0.7" step="0.1">
+                <span id="frictionCoeffValue">0.7</span>
+            </div>
+            <div class="control-group">
+                <button id="startBtn" class="btn btn-primary">Start Simulation</button>
+                <button id="resetBtn" class="btn btn-secondary">Reset</button>
+            </div>
+        </div>
+
+        <div class="simulation-container">
+            <div class="vehicle-panel">
+                <div class="vehicle-header">
+                    <h2>🚗 Toyota Corolla</h2>
+                    <div class="stats">
+                        <div class="stat">Speed: <span id="corollaSpeed">0</span> mph</div>
+                        <div class="stat">Status: <span id="corollaStatus">Ready</span></div>
+                    </div>
+                </div>
+                <div class="track-container" id="corollaTrack">
+                    <canvas id="corollaCanvas"></canvas>
+                    <img src="assets/celica.png" alt="Corolla" class="vehicle-image" id="corollaImage">
+                </div>
+            </div>
+
+            <div class="vehicle-panel">
+                <div class="vehicle-header">
+                    <h2>🚐 Dodge Caravan</h2>
+                    <div class="stats">
+                        <div class="stat">Speed: <span id="caravanSpeed">0</span> mph</div>
+                        <div class="stat">Status: <span id="caravanStatus">Ready</span></div>
+                    </div>
+                </div>
+                <div class="track-container" id="caravanTrack">
+                    <canvas id="caravanCanvas"></canvas>
+                    <img src="assets/minivan.png" alt="Caravan" class="vehicle-image" id="caravanImage">
+                </div>
+            </div>
+        </div>
+
+        <div id="fireworks-container"></div>
+    </div>
+
+    <script src="physics.js"></script>
+    <script src="simulation.js"></script>
+    <script src="fireworks.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
+
