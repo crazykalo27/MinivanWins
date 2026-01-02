@@ -43,6 +43,7 @@ class PhysicsEngine {
         this.frictionCoeff = 0.7;
         this.ignoreSlipping = false; // If true, ignore spin-out failures
         this.ignoreTipping = false;  // If true, ignore rollover failures
+        this.trackRadiusFeet = 75;   // Fixed track turn radius in feet (realistic road curve)
     }
 
     setFrictionCoeff(mu) {
@@ -57,6 +58,10 @@ class PhysicsEngine {
         this.ignoreTipping = ignore;
     }
 
+    setTrackRadius(radiusFeet) {
+        this.trackRadiusFeet = radiusFeet;
+    }
+
     /**
      * Calculate lateral acceleration required for a turn at given speed and radius
      * @param {number} speedMPH - Speed in miles per hour
@@ -69,34 +74,15 @@ class PhysicsEngine {
     }
 
     /**
-     * Calculate turn radius from turn angle (assuming a standard turn)
-     * For a right-hand turn, we use a reasonable radius based on angle
-     * @param {number} turnAngleDegrees - Turn angle in degrees
-     * @param {number} speedMPH - Speed in mph (affects radius)
-     * @param {Object} vehicle - Vehicle specification (for wheelbase)
+     * Get the track's turn radius
+     * The turn radius is a property of the ROAD/TRACK, not the vehicle.
+     * Both vehicles must navigate the same curve.
      * @returns {number} Turn radius in feet
      */
-    calculateTurnRadius(turnAngleDegrees, speedMPH, vehicle) {
-        const angleRad = (turnAngleDegrees * Math.PI) / 180;
-        
-        // Base radius calculation incorporates vehicle wheelbase
-        // Longer wheelbase vehicles have larger minimum turning radius
-        const wheelbaseFeet = vehicle.wheelbase * INCHES_TO_FEET;
-        
-        // Minimum turning radius is related to wheelbase and steering geometry
-        // Typical passenger cars: min radius ≈ 1.2-1.5x wheelbase for tight turns
-        const minRadiusFactor = 1.3; // Factor based on typical steering geometry
-        const baseRadius = wheelbaseFeet * minRadiusFactor;
-        
-        // Angle factor: sharper turns require smaller radius
-        // For a given turn angle, radius scales inversely with sin(angle)
-        const angleFactor = 1 / Math.sin(angleRad);
-        
-        // Speed factor: higher speeds require larger radii for stability
-        // At higher speeds, vehicles naturally take wider arcs
-        const speedFactor = Math.max(1, speedMPH / 30);
-        
-        return baseRadius * angleFactor * speedFactor;
+    calculateTurnRadius() {
+        // The track radius is fixed - it's the road's curve, not derived from vehicle properties
+        // This is physically correct: the road curve is what it is, vehicles must handle it
+        return this.trackRadiusFeet;
     }
 
     /**
@@ -157,11 +143,11 @@ class PhysicsEngine {
      * Check if vehicle will spin out at given conditions
      * @param {Object} vehicle - Vehicle specification
      * @param {number} speedMPH - Speed in mph
-     * @param {number} turnAngleDegrees - Turn angle in degrees
+     * @param {number} turnAngleDegrees - Turn angle in degrees (unused, kept for API compat)
      * @returns {Object} Result with spinOut flag and details
      */
     checkSpinOut(vehicle, speedMPH, turnAngleDegrees) {
-        const turnRadius = this.calculateTurnRadius(turnAngleDegrees, speedMPH, vehicle);
+        const turnRadius = this.calculateTurnRadius();
         const lateralAccel = this.calculateLateralAcceleration(speedMPH, turnRadius);
         const spinOutLimit = this.calculateSpinOutLimit(this.frictionCoeff, vehicle);
         
@@ -178,11 +164,11 @@ class PhysicsEngine {
      * Check if vehicle will rollover at given conditions
      * @param {Object} vehicle - Vehicle specification
      * @param {number} speedMPH - Speed in mph
-     * @param {number} turnAngleDegrees - Turn angle in degrees
+     * @param {number} turnAngleDegrees - Turn angle in degrees (unused, kept for API compat)
      * @returns {Object} Result with rollover flag and details
      */
     checkRollover(vehicle, speedMPH, turnAngleDegrees) {
-        const turnRadius = this.calculateTurnRadius(turnAngleDegrees, speedMPH, vehicle);
+        const turnRadius = this.calculateTurnRadius();
         const lateralAccel = this.calculateLateralAcceleration(speedMPH, turnRadius);
         const rolloverLimit = this.calculateRolloverLimit(vehicle);
         

@@ -1,5 +1,33 @@
 # Vehicle Turn Simulation - Change Log
 
+## Physics Audit & Track Radius Fix (Jan 2026)
+
+### Critical Fix
+- **Turn radius is now a fixed track property**: Previously, turn radius was incorrectly calculated based on vehicle wheelbase (~11 ft), causing unrealistic failures at low speeds (~12 mph). This was physically incorrect.
+  - **Before**: R = wheelbase × 1.3 × angleFactor × speedFactor (~11 feet for Celica)
+  - **After**: R = fixed track radius (default 75 ft, configurable 25-200 ft)
+  - The turn radius is a property of the ROAD, not the vehicle. Both vehicles must navigate the same curve.
+
+### New Controls
+- **Track Radius Slider**: Added control to set the road curve radius (25-200 feet)
+  - City intersection: 25-50 ft (tight, realistic for slow turns)
+  - Highway on-ramp: 100-200 ft (wide, higher speed curves)
+  - Default: 75 ft (moderate curve)
+
+### Expected Behavior Changes
+- **Failure speeds are now realistic**: With default 75 ft radius, failure occurs around 25-35 mph depending on vehicle
+- **Simulation speed does NOT affect physics**: Animation speed only affects visual playback, not force calculations
+- **Both vehicles tested on identical track**: Same curve radius ensures fair comparison
+
+### Physics Verification
+At 30 mph on 75 ft radius:
+- Speed: 30 mph = 44 ft/s
+- Lateral accel: v²/R = 44² / 75 = 25.8 ft/s² ≈ 0.8g
+- Spin-out limit (μ=0.7): ~22-24 ft/s² → will fail
+- At 25 mph: 36.7² / 75 = 18.0 ft/s² → will pass
+
+---
+
 ## Synchronized Speed Testing & Detailed Failure Math (Jan 2026)
 
 ### Changes

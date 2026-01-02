@@ -23,6 +23,13 @@
                 </div>
             </div>
             <div class="control-group">
+                <label for="trackRadius">Track Radius (ft)</label>
+                <div class="control-row">
+                    <input type="range" id="trackRadius" min="25" max="200" value="75" step="5">
+                    <span class="value-display" id="trackRadiusValue">75 ft</span>
+                </div>
+            </div>
+            <div class="control-group">
                 <label for="frictionCoeff">Friction (μ)</label>
                 <div class="control-row">
                     <input type="range" id="frictionCoeff" min="0.3" max="1.2" value="0.7" step="0.1">
@@ -121,28 +128,28 @@
             <div class="math-content">
                 <div class="math-formula">
                     <h4>Turn Radius</h4>
-                    <div class="formula">R = wheelbase × 1.3 × (1/sin(θ)) × max(1, v/30)</div>
-                    <div class="formula-desc">Where θ is turn angle, v is speed (mph). Longer wheelbase and sharper angles require smaller radii.</div>
+                    <div class="formula">R = Track Radius (fixed property of the road)</div>
+                    <div class="formula-desc">The curve radius is determined by the road geometry. Both vehicles must navigate the same curve. Typical values: City street 25-50 ft, Highway ramp 100-500 ft.</div>
                 </div>
                 <div class="math-formula">
                     <h4>Lateral Acceleration</h4>
                     <div class="formula">a<sub>lat</sub> = v² / R</div>
-                    <div class="formula-desc">Centripetal acceleration required for the turn at speed v and radius R.</div>
+                    <div class="formula-desc">Centripetal acceleration required for the turn. At 30 mph (44 fps) with R=75 ft: a = 44² / 75 = 25.8 ft/s² ≈ 0.8g</div>
                 </div>
                 <div class="math-formula">
                     <h4>Spin-Out Limit</h4>
                     <div class="formula">a<sub>max</sub> = μ × g × √(weight/3000) × drive_factor</div>
-                    <div class="formula-desc">Maximum lateral acceleration before losing grip. μ is friction coefficient, g = 32.174 ft/s². Heavier vehicles and FWD have better grip.</div>
+                    <div class="formula-desc">Maximum lateral acceleration before tire grip is lost. μ = friction coefficient (0.7 dry road), g = 32.174 ft/s². FWD: ×1.05, RWD: ×0.98.</div>
                 </div>
                 <div class="math-formula">
                     <h4>Rollover Limit (SSF)</h4>
-                    <div class="formula">a<sub>rollover</sub> = (track / (2 × CoM_height)) × g</div>
-                    <div class="formula-desc">Static Stability Factor determines rollover threshold. Wider track and lower center of mass increase stability.</div>
+                    <div class="formula">a<sub>rollover</sub> = (track_width / (2 × CoM_height)) × g</div>
+                    <div class="formula-desc">Static Stability Factor determines rollover threshold. Wider track and lower center of mass increase stability. Minivans typically have lower SSF (~1.1) vs sedans (~1.4).</div>
                 </div>
                 <div class="math-formula">
                     <h4>Failure Condition</h4>
-                    <div class="formula">Failure occurs when: a<sub>lat</sub> > min(a<sub>max</sub>, a<sub>rollover</sub>)</div>
-                    <div class="formula-desc">Vehicle fails when lateral acceleration exceeds either the spin-out or rollover limit, whichever is lower.</div>
+                    <div class="formula">Failure when: a<sub>lat</sub> > min(a<sub>spinout</sub>, a<sub>rollover</sub>)</div>
+                    <div class="formula-desc">The vehicle fails when lateral acceleration exceeds either the spin-out or rollover limit. Whichever limit is lower determines the failure mode.</div>
                 </div>
             </div>
         </div>
