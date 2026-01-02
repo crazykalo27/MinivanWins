@@ -40,7 +40,7 @@ const MPH_TO_FPS = 5280 / 3600; // feet per second
 
 class PhysicsEngine {
     constructor() {
-        this.frictionCoeff = 0.7;
+        this.frictionCoeff = 0.3;
         this.ignoreSlipping = false; // If true, ignore spin-out failures
         this.ignoreTipping = false;  // If true, ignore rollover failures
         this.trackRadiusFeet = 75;   // Fixed track turn radius in feet (realistic road curve)

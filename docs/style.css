@@ -722,23 +722,27 @@ canvas {
 
 .math-formula {
     background: #fafafa;
-    padding: 16px;
-    border-radius: 10px;
-    border-left: 4px solid #4caf50;
+    padding: 20px;
+    border-radius: 12px;
+    border-left: 5px solid #4caf50;
     transition: all 0.3s;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
 }
 
 .math-formula:hover {
     background: #f5f5f5;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    transform: translateY(-3px);
+    border-left-width: 6px;
 }
 
 .math-formula h4 {
-    color: #333;
-    font-size: 1.1em;
-    margin-bottom: 10px;
-    font-weight: 600;
+    color: #ff6b35;
+    font-size: 1.3em;
+    margin-bottom: 16px;
+    font-weight: 700;
+    border-bottom: 2px solid #e0e0e0;
+    padding-bottom: 8px;
 }
 
 .formula {
@@ -754,17 +758,104 @@ canvas {
     border: 1px solid #e0e0e0;
 }
 
-.formula sub {
-    font-size: 0.7em;
+.formula-large {
+    font-family: 'Courier New', monospace;
+    font-size: 1.6em;
+    color: #ff6b35;
+    font-weight: 700;
+    padding: 20px;
+    background: linear-gradient(135deg, #fff 0%, #fff5e6 100%);
+    border-radius: 8px;
+    margin: 12px 0;
+    text-align: center;
+    border: 3px solid #ff6b35;
+    box-shadow: 0 2px 8px rgba(255, 107, 53, 0.2);
+    line-height: 1.8;
+}
+
+.formula-large sub {
+    font-size: 0.6em;
     vertical-align: sub;
+    color: #d84315;
+}
+
+.formula-units {
+    font-size: 0.85em;
+    color: #666;
+    font-style: italic;
+    text-align: center;
+    margin: -8px 0 12px 0;
+    padding: 4px;
+    background: rgba(255, 107, 53, 0.1);
+    border-radius: 4px;
 }
 
 .formula-desc {
+    font-size: 0.95em;
+    color: #444;
+    line-height: 1.7;
+    margin-top: 12px;
+    padding: 12px;
+    background: rgba(255, 255, 255, 0.7);
+    border-radius: 6px;
+    border-left: 3px solid #4caf50;
+}
+
+.formula-desc strong {
+    color: #333;
+    font-weight: 700;
+}
+
+.fraction {
+    display: inline-block;
+    vertical-align: middle;
+    text-align: center;
+    margin: 0 4px;
+}
+
+.fraction .num {
+    display: block;
+    padding: 2px 6px;
+    border-bottom: 2px solid #ff6b35;
+    font-weight: 700;
+}
+
+.fraction .denom {
+    display: block;
+    padding: 2px 6px;
     font-size: 0.9em;
-    color: #666;
-    line-height: 1.5;
-    margin-top: 8px;
-    font-style: italic;
+    color: #d84315;
+}
+
+.sqrt {
+    display: inline-block;
+    position: relative;
+    margin: 0 4px;
+    padding-left: 12px;
+}
+
+.sqrt::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 8px;
+    height: 100%;
+    border-left: 2px solid #ff6b35;
+    border-top: 2px solid #ff6b35;
+    border-radius: 2px 0 0 0;
+}
+
+.sqrt-content {
+    display: inline-block;
+    border-top: 2px solid #ff6b35;
+    padding: 2px 4px 0 4px;
+    margin-left: 2px;
+}
+
+.formula sub {
+    font-size: 0.7em;
+    vertical-align: sub;
 }
 
 .winner-summary {

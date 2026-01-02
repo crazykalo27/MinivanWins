@@ -32,8 +32,8 @@
             <div class="control-group">
                 <label for="frictionCoeff">Friction (μ)</label>
                 <div class="control-row">
-                    <input type="range" id="frictionCoeff" min="0.3" max="1.2" value="0.7" step="0.1">
-                    <span class="value-display" id="frictionCoeffValue">0.7</span>
+                    <input type="range" id="frictionCoeff" min="0.3" max="1.2" value="0.3" step="0.1">
+                    <span class="value-display" id="frictionCoeffValue">0.3</span>
                 </div>
             </div>
             <div class="control-group">
@@ -44,11 +44,11 @@
                 <label>Simulation Speed</label>
                 <div class="speed-slider-container">
                     <span class="speed-label speed-label-slow">Slow</span>
-                    <input type="range" id="simSpeedSlider" min="0" max="100" value="50" step="1" class="speed-slider">
+                    <input type="range" id="simSpeedSlider" min="0" max="100" value="100" step="1" class="speed-slider">
                     <span class="speed-label speed-label-fast">Fast</span>
                 </div>
                 <div class="speed-value-display">
-                    <span id="simSpeedValue">1.0x</span>
+                    <span id="simSpeedValue">50x</span>
                 </div>
             </div>
             <div class="control-group failure-modes-group">
@@ -136,32 +136,72 @@
         </div>
 
         <div class="math-section">
-            <h3>Physics Equations</h3>
+            <h3>📐 Physics Equations Used in Simulation</h3>
             <div class="math-content">
                 <div class="math-formula">
-                    <h4>Turn Radius</h4>
-                    <div class="formula">R = Track Radius (fixed property of the road)</div>
-                    <div class="formula-desc">The curve radius is determined by the road geometry. Both vehicles must navigate the same curve. Typical values: City street 25-50 ft, Highway ramp 100-500 ft.</div>
+                    <h4>1. Turn Radius (R)</h4>
+                    <div class="formula-large">R = Track Radius</div>
+                    <div class="formula-units">Units: feet (ft)</div>
+                    <div class="formula-desc">
+                        <strong>Definition:</strong> The curve radius is a fixed property of the road geometry. Both vehicles must navigate the same curve.<br><br>
+                        <strong>Typical Values:</strong><br>
+                        • City street: 25-50 ft<br>
+                        • Highway ramp: 100-500 ft<br>
+                        • Default in simulation: 75 ft
+                    </div>
                 </div>
                 <div class="math-formula">
-                    <h4>Lateral Acceleration</h4>
-                    <div class="formula">a<sub>lat</sub> = v² / R</div>
-                    <div class="formula-desc">Centripetal acceleration required for the turn. At 30 mph (44 fps) with R=75 ft: a = 44² / 75 = 25.8 ft/s² ≈ 0.8g</div>
+                    <h4>2. Lateral Acceleration (a<sub>lat</sub>)</h4>
+                    <div class="formula-large">a<sub>lat</sub> = v² / R</div>
+                    <div class="formula-units">Units: ft/s² (where v is in ft/s, R is in ft)</div>
+                    <div class="formula-desc">
+                        <strong>Definition:</strong> Centripetal acceleration required to maintain the turn at speed v.<br><br>
+                        <strong>Example Calculation:</strong><br>
+                        At 30 mph (44 ft/s) with R = 75 ft:<br>
+                        a<sub>lat</sub> = 44² / 75 = 1,936 / 75 = <strong>25.8 ft/s²</strong> ≈ 0.8g<br><br>
+                        <strong>Conversion:</strong> 1 mph = 1.467 ft/s
+                    </div>
                 </div>
                 <div class="math-formula">
-                    <h4>Spin-Out Limit</h4>
-                    <div class="formula">a<sub>max</sub> = μ × g × √(weight/3000) × drive_factor</div>
-                    <div class="formula-desc">Maximum lateral acceleration before tire grip is lost. μ = friction coefficient (0.7 dry road), g = 32.174 ft/s². FWD: ×1.05, RWD: ×0.98.</div>
+                    <h4>3. Spin-Out Limit (a<sub>max</sub>)</h4>
+                    <div class="formula-large">a<sub>max</sub> = μ × g × √(weight/3000) × drive_factor</div>
+                    <div class="formula-units">Units: ft/s²</div>
+                    <div class="formula-desc">
+                        <strong>Variables:</strong><br>
+                        • μ (mu) = friction coefficient (0.3-1.2)<br>
+                        • g = gravitational acceleration = 32.174 ft/s²<br>
+                        • weight = vehicle weight in lbs<br>
+                        • drive_factor = 1.05 (FWD) or 0.98 (RWD)<br><br>
+                        <strong>Definition:</strong> Maximum lateral acceleration before tire grip is lost. Heavier vehicles have better grip due to larger tire contact patches. FWD vehicles are slightly more stable.
+                    </div>
                 </div>
                 <div class="math-formula">
-                    <h4>Rollover Limit (SSF)</h4>
-                    <div class="formula">a<sub>rollover</sub> = (track_width / (2 × CoM_height)) × g</div>
-                    <div class="formula-desc">Static Stability Factor determines rollover threshold. Wider track and lower center of mass increase stability. Minivans typically have lower SSF (~1.1) vs sedans (~1.4).</div>
+                    <h4>4. Rollover Limit (a<sub>rollover</sub>)</h4>
+                    <div class="formula-large">a<sub>rollover</sub> = (track_width / (2 × CoM_height)) × g</div>
+                    <div class="formula-units">Units: ft/s²</div>
+                    <div class="formula-desc">
+                        <strong>Static Stability Factor (SSF):</strong><br>
+                        SSF = track_width / (2 × CoM_height)<br><br>
+                        <strong>Variables:</strong><br>
+                        • track_width = average of front and rear track (inches)<br>
+                        • CoM_height = center of mass height (inches)<br>
+                        • g = 32.174 ft/s²<br><br>
+                        <strong>Definition:</strong> Maximum lateral acceleration before rollover. Wider track and lower center of mass increase stability. Typical SSF: Minivans ~1.1, Sedans ~1.4.
+                    </div>
                 </div>
                 <div class="math-formula">
-                    <h4>Failure Condition</h4>
-                    <div class="formula">Failure when: a<sub>lat</sub> > min(a<sub>spinout</sub>, a<sub>rollover</sub>)</div>
-                    <div class="formula-desc">The vehicle fails when lateral acceleration exceeds either the spin-out or rollover limit. Whichever limit is lower determines the failure mode.</div>
+                    <h4>5. Failure Condition</h4>
+                    <div class="formula-large">Failure when: a<sub>lat</sub> > min(a<sub>max</sub>, a<sub>rollover</sub>)</div>
+                    <div class="formula-units">Failure occurs when margin < 0</div>
+                    <div class="formula-desc">
+                        <strong>Failure Detection:</strong><br>
+                        • Spin-out margin = a<sub>max</sub> - a<sub>lat</sub><br>
+                        • Rollover margin = a<sub>rollover</sub> - a<sub>lat</sub><br><br>
+                        <strong>Failure occurs when:</strong><br>
+                        • Spin-out margin < 0 → Vehicle loses grip (spin-out)<br>
+                        • Rollover margin < 0 → Vehicle tips over (rollover)<br><br>
+                        <strong>Failure Type:</strong> Whichever limit is lower determines the failure mode. If both margins are negative, the more negative one fails first.
+                    </div>
                 </div>
             </div>
         </div>

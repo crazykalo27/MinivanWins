@@ -111,8 +111,13 @@ function updateSimSpeed() {
 // Slider event listener
 simSpeedSlider.addEventListener('input', updateSimSpeed);
 
-// Initialize speed (default to middle: 50 = ~1.0x)
+// Initialize speed (default to max: 100 = ~50x)
 updateSimSpeed();
+
+// Initialize friction to match default (0.3)
+physicsEngine.setFrictionCoeff(0.3);
+corollaSim.setFrictionCoeff(0.3);
+caravanSim.setFrictionCoeff(0.3);
 
 startBtn.addEventListener('click', async () => {
     if (corollaSim.isRunning || caravanSim.isRunning) {
