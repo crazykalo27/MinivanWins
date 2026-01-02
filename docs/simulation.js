@@ -13,6 +13,7 @@ class Simulation {
         this.failureType = null;
         this.track = [];
         this.simSpeedMultiplier = 0.6; // Default mid-speed
+        this.shouldStop = false; // Flag to stop simulation early
         
         this.resizeCanvas();
         window.addEventListener('resize', () => this.resizeCanvas());
@@ -41,8 +42,12 @@ class Simulation {
     }
 
     reset() {
-        this.currentSpeed = 0;
+        // Signal to stop any running simulation
+        this.shouldStop = true;
         this.isRunning = false;
+        
+        // Reset all state
+        this.currentSpeed = 0;
         this.hasFailed = false;
         this.failureType = null;
         this.track = [];
@@ -160,7 +165,9 @@ class Simulation {
         this.vehicleImage.style.transform = `translate(-50%, -50%) rotate(${rotation}deg)`;
     }
 
-    async run(speedIncrement = 1, maxSpeed = 150, progressCb) {
+    async run(speedIncrement = 1, maxSpeed = 150, progressCb, checkOtherFailed = null) {
+        // Reset stop flag at start of new simulation
+        this.shouldStop = false;
         this.isRunning = true;
         this.hasFailed = false;
         this.track = [];
@@ -171,7 +178,16 @@ class Simulation {
         const frameRate = 60;
         const frameTime = 1000 / frameRate;
         
-        while (currentSpeed <= maxSpeed && !this.hasFailed) {
+        while (currentSpeed <= maxSpeed && !this.hasFailed && !this.shouldStop) {
+            if (this.shouldStop) break;
+            
+            // Check if the other vehicle has failed (if callback provided)
+            if (checkOtherFailed && checkOtherFailed()) {
+                // Other vehicle failed first - we win!
+                this.shouldStop = true;
+                break;
+            }
+            
             if (progressCb) progressCb(currentSpeed, 0);
             const analysis = this.physics.analyzeFailure(this.vehicle, currentSpeed, this.turnAngle);
             
@@ -184,12 +200,22 @@ class Simulation {
             }
             
             // Animate vehicle through turn at this speed
-            await this.animateTurn(currentSpeed, animationDuration, progressCb);
+            await this.animateTurn(currentSpeed, animationDuration, progressCb, checkOtherFailed);
+            
+            // Check again after animation in case reset was called or other vehicle failed
+            if (this.shouldStop) break;
+            if (checkOtherFailed && checkOtherFailed()) {
+                this.shouldStop = true;
+                break;
+            }
             
             currentSpeed += speedIncrement;
         }
         
-        if (!this.hasFailed) {
+        // If we stopped because other vehicle failed, mark as completed (winner)
+        if (this.shouldStop && !this.hasFailed && checkOtherFailed && checkOtherFailed()) {
+            this.currentSpeed = currentSpeed;
+        } else if (!this.hasFailed && !this.shouldStop) {
             this.currentSpeed = maxSpeed;
         }
         
@@ -202,7 +228,7 @@ class Simulation {
         };
     }
 
-    async animateTurn(speedMPH, duration, progressCb) {
+    async animateTurn(speedMPH, duration, progressCb, checkOtherFailed = null) {
         return new Promise((resolve) => {
             const startTime = Date.now();
             const width = this.canvas.width;
@@ -240,7 +266,15 @@ class Simulation {
             this.setVisualSpeed(speedMPH);
             
             const animate = () => {
-                if (this.hasFailed) {
+                // Check if we should stop (failed, reset, or other vehicle failed)
+                if (this.hasFailed || this.shouldStop) {
+                    resolve();
+                    return;
+                }
+                
+                // Check if other vehicle failed during animation
+                if (checkOtherFailed && checkOtherFailed()) {
+                    this.shouldStop = true;
                     resolve();
                     return;
                 }
@@ -280,7 +314,15 @@ class Simulation {
                 this.updateVehiclePosition(x, y, rotation);
                 if (progressCb) progressCb(speedMPH, progress);
                 
-                if (progress < 1 && !this.hasFailed) {
+                // Check if other vehicle failed before continuing animation
+                const otherFailed = checkOtherFailed && checkOtherFailed();
+                if (otherFailed) {
+                    this.shouldStop = true;
+                    resolve();
+                    return;
+                }
+                
+                if (progress < 1 && !this.hasFailed && !this.shouldStop) {
                     requestAnimationFrame(animate);
                 } else {
                     resolve();

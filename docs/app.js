@@ -123,71 +123,103 @@ startBtn.addEventListener('click', async () => {
         }
     };
     
-    // Get speed step value from input (allow decimals)
-    const speedStep = parseFloat(speedStepInput.value) || 1;
-    
-    // Run both simulations simultaneously
-    const [corollaResult, caravanResult] = await Promise.all([
-        corollaSim.run(speedStep, 150, (speed) => handleProgress('corolla', speed)),
-        caravanSim.run(speedStep, 150, (speed) => handleProgress('caravan', speed))
-    ]);
-    
-    // Determine winner
-    let winner = null;
-    if (corollaResult.hasFailed && caravanResult.hasFailed) {
-        // Both failed - winner is the one that lasted longer (higher speed)
-        if (corollaResult.speed > caravanResult.speed) {
-            winner = 'Toyota Corolla';
-        } else if (caravanResult.speed > corollaResult.speed) {
-            winner = 'Dodge Caravan';
-        } else {
-            winner = 'Tie!';
+    try {
+        // Get speed step value from input (allow decimals)
+        const speedStep = parseFloat(speedStepInput.value) || 1;
+        
+        // Run both simulations simultaneously with callbacks to check if other has failed
+        // Each simulation can stop early if the other vehicle fails first
+        const [corollaResult, caravanResult] = await Promise.all([
+            corollaSim.run(speedStep, 150, (speed) => handleProgress('corolla', speed), 
+                () => caravanSim.hasFailed), // Check if caravan failed
+            caravanSim.run(speedStep, 150, (speed) => handleProgress('caravan', speed),
+                () => corollaSim.hasFailed)  // Check if corolla failed
+        ]);
+        
+        // Determine winner - audit all cases
+        let winner = null;
+        
+        // Case 1: Both failed
+        if (corollaResult.hasFailed && caravanResult.hasFailed) {
+            // Winner is the one that lasted longer (higher speed)
+            if (corollaResult.speed > caravanResult.speed) {
+                winner = 'Toyota Corolla';
+            } else if (caravanResult.speed > corollaResult.speed) {
+                winner = 'Dodge Caravan';
+            } else {
+                // Same speed - tie
+                winner = 'Tie!';
+            }
         }
-    } else if (corollaResult.hasFailed) {
-        winner = 'Dodge Caravan';
-    } else if (caravanResult.hasFailed) {
-        winner = 'Toyota Corolla';
-    } else {
-        winner = 'Both vehicles completed successfully!';
+        // Case 2: Corolla failed, Caravan did not (Caravan wins)
+        else if (corollaResult.hasFailed && !caravanResult.hasFailed) {
+            winner = 'Dodge Caravan';
+        }
+        // Case 3: Caravan failed, Corolla did not (Corolla wins)
+        else if (!corollaResult.hasFailed && caravanResult.hasFailed) {
+            winner = 'Toyota Corolla';
+        }
+        // Case 4: Neither failed (both completed successfully)
+        else {
+            winner = 'Both vehicles completed successfully!';
+        }
+        
+        // Update status displays
+        if (corollaResult.hasFailed) {
+            corollaStatusDisplay.textContent = `Failed: ${corollaResult.failureType}`;
+            corollaStatusDisplay.className = 'status-failed';
+        } else if (caravanResult.hasFailed) {
+            // Corolla wins because caravan failed
+            corollaStatusDisplay.textContent = 'Winner!';
+            corollaStatusDisplay.className = 'status-ready';
+        } else {
+            corollaStatusDisplay.textContent = 'Completed';
+            corollaStatusDisplay.className = 'status-ready';
+        }
+        
+        if (caravanResult.hasFailed) {
+            caravanStatusDisplay.textContent = `Failed: ${caravanResult.failureType}`;
+            caravanStatusDisplay.className = 'status-failed';
+        } else if (corollaResult.hasFailed) {
+            // Caravan wins because corolla failed
+            caravanStatusDisplay.textContent = 'Winner!';
+            caravanStatusDisplay.className = 'status-ready';
+        } else {
+            caravanStatusDisplay.textContent = 'Completed';
+            caravanStatusDisplay.className = 'status-ready';
+        }
+        
+        // Analysis text
+        corollaAnalysis.textContent = buildVehicleAnalysis('Toyota Corolla', corollaResult);
+        caravanAnalysis.textContent = buildVehicleAnalysis('Dodge Caravan', caravanResult);
+        winnerSummary.textContent = buildWinnerSummary(winner, corollaResult, caravanResult);
+        
+        corollaSpeedDisplay.textContent = corollaResult.speed.toFixed(1);
+        caravanSpeedDisplay.textContent = caravanResult.speed.toFixed(1);
+        
+        // Launch fireworks for winner (only if there's a single winner, not tie or both)
+        if (winner && winner !== 'Tie!' && !winner.includes('Both')) {
+            fireworks.launch(winner);
+        }
+    } catch (error) {
+        console.error('Simulation error:', error);
+    } finally {
+        // Always re-enable start button, even if simulation was stopped
+        startBtn.disabled = false;
+        startBtn.textContent = 'Start Simulation';
     }
-    
-    // Update status displays
-    if (corollaResult.hasFailed) {
-        corollaStatusDisplay.textContent = `Failed: ${corollaResult.failureType}`;
-        corollaStatusDisplay.className = 'status-failed';
-    } else {
-        corollaStatusDisplay.textContent = 'Completed';
-        corollaStatusDisplay.className = 'status-ready';
-    }
-    
-    if (caravanResult.hasFailed) {
-        caravanStatusDisplay.textContent = `Failed: ${caravanResult.failureType}`;
-        caravanStatusDisplay.className = 'status-failed';
-    } else {
-        caravanStatusDisplay.textContent = 'Completed';
-        caravanStatusDisplay.className = 'status-ready';
-    }
-    
-    // Analysis text
-    corollaAnalysis.textContent = buildVehicleAnalysis('Toyota Corolla', corollaResult);
-    caravanAnalysis.textContent = buildVehicleAnalysis('Dodge Caravan', caravanResult);
-    winnerSummary.textContent = buildWinnerSummary(winner, corollaResult, caravanResult);
-    
-    corollaSpeedDisplay.textContent = corollaResult.speed.toFixed(1);
-    caravanSpeedDisplay.textContent = caravanResult.speed.toFixed(1);
-    
-    // Launch fireworks for winner
-    if (winner && !winner.includes('Tie') && !winner.includes('Both')) {
-        fireworks.launch(winner);
-    }
-    
-    startBtn.disabled = false;
-    startBtn.textContent = 'Start Simulation';
 });
 
 resetBtn.addEventListener('click', () => {
+    // Stop any running simulations
     corollaSim.reset();
     caravanSim.reset();
+    
+    // Re-enable start button in case it was disabled
+    startBtn.disabled = false;
+    startBtn.textContent = 'Start Simulation';
+    
+    // Reset displays
     corollaSpeedDisplay.textContent = '0';
     corollaStatusDisplay.textContent = 'Ready';
     corollaStatusDisplay.className = 'status-ready';
@@ -217,16 +249,29 @@ function buildVehicleAnalysis(name, result) {
 function buildWinnerSummary(winner, corollaResult, caravanResult) {
     if (!winner) return 'Run the simulation to see which vehicle wins and why.';
     
-    if (winner.includes('Tie')) {
-        return 'Both vehicles failed at similar thresholds—no clear winner.';
-    }
-    
-    if (winner.includes('Both')) {
-        return 'Both vehicles completed successfully through the tested speed range.';
-    }
-    
     const corollaSpeed = corollaResult.speed.toFixed(1);
     const caravanSpeed = caravanResult.speed.toFixed(1);
-    return `${winner} wins by sustaining a higher survivable speed: Corolla ${corollaSpeed} mph vs Caravan ${caravanSpeed} mph.`;
+    
+    // Case 1: Tie - both failed at same speed
+    if (winner.includes('Tie')) {
+        return `Both vehicles failed at ${corollaSpeed} mph—no clear winner.`;
+    }
+    
+    // Case 2: Both completed successfully
+    if (winner.includes('Both')) {
+        return `Both vehicles completed successfully through the tested speed range (up to ${Math.max(corollaSpeed, caravanSpeed)} mph).`;
+    }
+    
+    // Case 3: One vehicle failed, other wins
+    if (corollaResult.hasFailed && !caravanResult.hasFailed) {
+        return `${winner} wins! Corolla failed at ${corollaSpeed} mph, while Caravan completed successfully at ${caravanSpeed} mph.`;
+    }
+    
+    if (!corollaResult.hasFailed && caravanResult.hasFailed) {
+        return `${winner} wins! Caravan failed at ${caravanSpeed} mph, while Corolla completed successfully at ${corollaSpeed} mph.`;
+    }
+    
+    // Case 4: Both failed - winner is the one that lasted longer
+    return `${winner} wins by sustaining a higher speed before failure: Corolla ${corollaSpeed} mph vs Caravan ${caravanSpeed} mph.`;
 }
 

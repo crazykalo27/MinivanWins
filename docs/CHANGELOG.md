@@ -1,5 +1,34 @@
 # Vehicle Turn Simulation - Change Log
 
+## Simulation End Logic & Winner Detection (Jan 2026)
+
+### Changes
+- **Immediate stop when opponent fails**: When one vehicle fails, the other simulation stops immediately
+  - Simulations communicate via callbacks to check if opponent has failed
+  - Winner is determined correctly in all scenarios
+  - Fireworks trigger for the winning vehicle
+  - Status displays show "Winner!" for the vehicle that wins
+- **Comprehensive end-case handling**: All simulation end scenarios properly handled
+  - Both fail: Winner is vehicle that lasted longer (higher speed)
+  - One fails first: Other vehicle wins immediately with fireworks
+  - Both complete: Both marked as completed successfully
+  - Tie scenario: Properly detected and handled
+- **Improved winner summary**: More detailed explanations for each outcome scenario
+
+---
+
+## Reset Button Enhancement (Jan 2026)
+
+### Changes
+- **Reset now stops running simulations**: Reset button can now interrupt and stop any currently running simulation
+  - Sets `shouldStop` flag to break out of simulation loops
+  - Stops animation frames immediately
+  - Re-enables start button for immediate restart
+  - Properly resets all state and displays
+  - Allows users to stop and restart simulations at any time
+
+---
+
 ## Math Display Section (Jan 2026)
 
 ### Changes
