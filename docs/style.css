@@ -455,6 +455,12 @@ canvas {
     animation: pulse 0.5s infinite;
 }
 
+.status-winner {
+    color: #ff6b35 !important;
+    font-weight: 700;
+    font-size: 1.1em;
+}
+
 @keyframes pulse {
     0%, 100% { opacity: 1; }
     50% { opacity: 0.5; }

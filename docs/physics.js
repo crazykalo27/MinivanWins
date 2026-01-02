@@ -209,12 +209,12 @@ class PhysicsEngine {
         let failureType = null;
         let hasFailed = false;
         
-        // Catastrophic failure: margin must be negative (exceeded limit)
-        // We use a threshold to ensure it's truly catastrophic, not just a slight exceedance
-        const catastrophicThreshold = -0.5; // ft/s² buffer for catastrophic failure
+        // Failure occurs when margin is negative (exceeded limit)
+        // A negative margin means the required acceleration exceeds the limit
+        const failureThreshold = 0; // Any negative margin = failure
         
-        if (spinOutMargin < catastrophicThreshold && rolloverMargin < catastrophicThreshold) {
-            // Both would fail, check which happens first
+        if (spinOutMargin < failureThreshold && rolloverMargin < failureThreshold) {
+            // Both would fail, check which happens first (more negative = worse)
             if (spinOutMargin < rolloverMargin) {
                 failureType = 'spin-out';
                 hasFailed = true;
@@ -222,10 +222,10 @@ class PhysicsEngine {
                 failureType = 'rollover';
                 hasFailed = true;
             }
-        } else if (spinOutMargin < catastrophicThreshold) {
+        } else if (spinOutMargin < failureThreshold) {
             failureType = 'spin-out';
             hasFailed = true;
-        } else if (rolloverMargin < catastrophicThreshold) {
+        } else if (rolloverMargin < failureThreshold) {
             failureType = 'rollover';
             hasFailed = true;
         }

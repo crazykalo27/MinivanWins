@@ -225,18 +225,34 @@ startBtn.addEventListener('click', async () => {
         caravanSim.isRunning = false;
         
         // Determine winner - audit all cases
-        let winner = null;
+    let winner = null;
+        
+        // Debug: Log failure states
+        console.log('Winner determination:', {
+            celicaFailed: corollaResult.hasFailed,
+            celicaSpeed: corollaResult.speed,
+            celicaFailureType: corollaResult.failureType,
+            caravanFailed: caravanResult.hasFailed,
+            caravanSpeed: caravanResult.speed,
+            caravanFailureType: caravanResult.failureType
+        });
         
         // Case 1: Both failed
-        if (corollaResult.hasFailed && caravanResult.hasFailed) {
-            // Winner is the one that lasted longer (higher speed)
-            if (corollaResult.speed > caravanResult.speed) {
-                winner = 'Toyota Celica';
-            } else if (caravanResult.speed > corollaResult.speed) {
-                winner = 'Dodge Caravan';
-            } else {
-                // Same speed - tie
+    if (corollaResult.hasFailed && caravanResult.hasFailed) {
+            // Check if they failed at the same speed (within 0.1 mph tolerance for floating point)
+            const speedDiff = Math.abs(corollaResult.speed - caravanResult.speed);
+            if (speedDiff < 0.1) {
+                // Same speed - tie (both failed at same speed)
                 winner = 'Tie!';
+                console.log('Tie detected: Both failed at same speed');
+            } else {
+                // Winner is the one that lasted longer (higher speed)
+        if (corollaResult.speed > caravanResult.speed) {
+                    winner = 'Toyota Celica';
+                } else {
+                    winner = 'Dodge Caravan';
+                }
+                console.log(`Winner: ${winner} (failed at higher speed)`);
             }
         }
         // Case 2: Celica failed, Caravan did not (Caravan wins)
@@ -249,52 +265,68 @@ startBtn.addEventListener('click', async () => {
         }
         // Case 4: Neither failed (both completed successfully)
         else {
-            winner = 'Both vehicles completed successfully!';
-        }
-        
-        // Update status displays
-        if (corollaResult.hasFailed) {
-            corollaStatusDisplay.textContent = `Failed: ${corollaResult.failureType}`;
-            corollaStatusDisplay.className = 'status-failed';
-        } else if (caravanResult.hasFailed) {
-            // Celica wins because caravan failed
-            corollaStatusDisplay.textContent = 'Winner!';
-            corollaStatusDisplay.className = 'status-ready';
+        winner = 'Both vehicles completed successfully!';
+    }
+    
+    // Update status displays
+    if (corollaResult.hasFailed) {
+            if (winner === 'Tie!') {
+                corollaStatusDisplay.textContent = `Failed: ${corollaResult.failureType} (Tie)`;
+            } else if (winner === 'Toyota Celica') {
+                corollaStatusDisplay.textContent = 'Winner!';
+                corollaStatusDisplay.className = 'status-winner';
+            } else {
+        corollaStatusDisplay.textContent = `Failed: ${corollaResult.failureType}`;
+        corollaStatusDisplay.className = 'status-failed';
+            }
         } else {
-            corollaStatusDisplay.textContent = 'Completed';
-            corollaStatusDisplay.className = 'status-ready';
-        }
-        
-        if (caravanResult.hasFailed) {
-            caravanStatusDisplay.textContent = `Failed: ${caravanResult.failureType}`;
-            caravanStatusDisplay.className = 'status-failed';
-        } else if (corollaResult.hasFailed) {
-            // Caravan wins because Celica failed
-            caravanStatusDisplay.textContent = 'Winner!';
-            caravanStatusDisplay.className = 'status-ready';
+            if (winner === 'Dodge Caravan') {
+                corollaStatusDisplay.textContent = 'Winner!';
+                corollaStatusDisplay.className = 'status-winner';
+    } else {
+        corollaStatusDisplay.textContent = 'Completed';
+        corollaStatusDisplay.className = 'status-ready';
+            }
+    }
+    
+    if (caravanResult.hasFailed) {
+            if (winner === 'Tie!') {
+                caravanStatusDisplay.textContent = `Failed: ${caravanResult.failureType} (Tie)`;
+            } else if (winner === 'Dodge Caravan') {
+                caravanStatusDisplay.textContent = 'Winner!';
+                caravanStatusDisplay.className = 'status-winner';
+            } else {
+        caravanStatusDisplay.textContent = `Failed: ${caravanResult.failureType}`;
+        caravanStatusDisplay.className = 'status-failed';
+            }
         } else {
-            caravanStatusDisplay.textContent = 'Completed';
-            caravanStatusDisplay.className = 'status-ready';
+            if (winner === 'Toyota Celica') {
+                caravanStatusDisplay.textContent = 'Winner!';
+                caravanStatusDisplay.className = 'status-winner';
+    } else {
+        caravanStatusDisplay.textContent = 'Completed';
+        caravanStatusDisplay.className = 'status-ready';
+            }
         }
-        
+    
         // Analysis text (use innerHTML to render math formatting)
         corollaAnalysis.innerHTML = buildVehicleAnalysis('Toyota Celica', corollaResult, VEHICLES.corolla, caravanResult, VEHICLES.caravan);
         caravanAnalysis.innerHTML = buildVehicleAnalysis('Dodge Caravan', caravanResult, VEHICLES.caravan, corollaResult, VEHICLES.corolla);
         winnerSummary.innerHTML = buildWinnerSummary(winner, corollaResult, caravanResult, VEHICLES.corolla, VEHICLES.caravan);
-        
-        corollaSpeedDisplay.textContent = corollaResult.speed.toFixed(1);
-        caravanSpeedDisplay.textContent = caravanResult.speed.toFixed(1);
-        
+    
+    corollaSpeedDisplay.textContent = corollaResult.speed.toFixed(1);
+    caravanSpeedDisplay.textContent = caravanResult.speed.toFixed(1);
+    
         // Launch fireworks for winner (only if there's a single winner, not tie or both)
         if (winner && winner !== 'Tie!' && !winner.includes('Both')) {
-            fireworks.launch(winner);
-        }
+        fireworks.launch(winner);
+    }
     } catch (error) {
         console.error('Simulation error:', error);
     } finally {
         // Always re-enable start button, even if simulation was stopped
-        startBtn.disabled = false;
-        startBtn.textContent = 'Start Simulation';
+    startBtn.disabled = false;
+    startBtn.textContent = 'Start Simulation';
     }
 });
 
