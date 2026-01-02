@@ -35,17 +35,28 @@
             </div>
             <div class="control-group speed-control-group">
                 <label>Simulation Speed</label>
-                <div class="speed-lights-container">
-                    <button class="speed-arrow speed-arrow-left" id="speedDown">◀</button>
-                    <div class="speed-lights">
-                        <div class="speed-light" data-level="1"></div>
-                        <div class="speed-light" data-level="2"></div>
-                        <div class="speed-light" data-level="3"></div>
-                        <div class="speed-light" data-level="4"></div>
-                        <div class="speed-light" data-level="5"></div>
-                        <div class="speed-light" data-level="6"></div>
-                    </div>
-                    <button class="speed-arrow speed-arrow-right" id="speedUp">▶</button>
+                <div class="speed-slider-container">
+                    <span class="speed-label speed-label-slow">Slow</span>
+                    <input type="range" id="simSpeedSlider" min="0" max="100" value="50" step="1" class="speed-slider">
+                    <span class="speed-label speed-label-fast">Fast</span>
+                </div>
+                <div class="speed-value-display">
+                    <span id="simSpeedValue">1.0x</span>
+                </div>
+            </div>
+            <div class="control-group failure-modes-group">
+                <label>Failure Modes</label>
+                <div class="checkbox-row">
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="ignoreSlipping" class="failure-checkbox">
+                        <span>Ignore Slipping (Spin-out)</span>
+                    </label>
+                </div>
+                <div class="checkbox-row">
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="ignoreTipping" class="failure-checkbox">
+                        <span>Ignore Tipping (Rollover)</span>
+                    </label>
                 </div>
             </div>
             <div class="control-group buttons-group">
@@ -66,6 +77,14 @@
                         <div class="stat">Status: <span id="corollaStatus">Ready</span></div>
                     </div>
                 </div>
+                <div class="vehicle-description">
+                    <div class="spec-row"><strong>Year:</strong> 2004</div>
+                    <div class="spec-row"><strong>Weight:</strong> 2,650 lbs</div>
+                    <div class="spec-row"><strong>Center of Mass:</strong> 21"</div>
+                    <div class="spec-row"><strong>Wheelbase:</strong> 102.4"</div>
+                    <div class="spec-row"><strong>Track Width:</strong> 59.9" / 59.4"</div>
+                    <div class="spec-row"><strong>Drive:</strong> Front-Wheel Drive</div>
+                </div>
                 <div class="track-container" id="corollaTrack">
                     <canvas id="corollaCanvas"></canvas>
                     <img src="assets/celica.png" alt="Corolla" class="vehicle-image" id="corollaImage">
@@ -81,11 +100,50 @@
                         <div class="stat">Status: <span id="caravanStatus">Ready</span></div>
                     </div>
                 </div>
+                <div class="vehicle-description">
+                    <div class="spec-row"><strong>Year:</strong> 2016</div>
+                    <div class="spec-row"><strong>Weight:</strong> 4,560 lbs</div>
+                    <div class="spec-row"><strong>Center of Mass:</strong> 27"</div>
+                    <div class="spec-row"><strong>Wheelbase:</strong> 121.2"</div>
+                    <div class="spec-row"><strong>Track Width:</strong> 64.8" / 64.8"</div>
+                    <div class="spec-row"><strong>Drive:</strong> Front-Wheel Drive</div>
+                </div>
                 <div class="track-container" id="caravanTrack">
                     <canvas id="caravanCanvas"></canvas>
                     <img src="assets/minivan.png" alt="Caravan" class="vehicle-image" id="caravanImage">
                 </div>
                 <div class="analysis" id="caravanAnalysis">Adjust angle and friction, then start to see how the Caravan handles the turn.</div>
+            </div>
+        </div>
+
+        <div class="math-section">
+            <h3>Physics Equations</h3>
+            <div class="math-content">
+                <div class="math-formula">
+                    <h4>Turn Radius</h4>
+                    <div class="formula">R = wheelbase × 1.3 × (1/sin(θ)) × max(1, v/30)</div>
+                    <div class="formula-desc">Where θ is turn angle, v is speed (mph). Longer wheelbase and sharper angles require smaller radii.</div>
+                </div>
+                <div class="math-formula">
+                    <h4>Lateral Acceleration</h4>
+                    <div class="formula">a<sub>lat</sub> = v² / R</div>
+                    <div class="formula-desc">Centripetal acceleration required for the turn at speed v and radius R.</div>
+                </div>
+                <div class="math-formula">
+                    <h4>Spin-Out Limit</h4>
+                    <div class="formula">a<sub>max</sub> = μ × g × √(weight/3000) × drive_factor</div>
+                    <div class="formula-desc">Maximum lateral acceleration before losing grip. μ is friction coefficient, g = 32.174 ft/s². Heavier vehicles and FWD have better grip.</div>
+                </div>
+                <div class="math-formula">
+                    <h4>Rollover Limit (SSF)</h4>
+                    <div class="formula">a<sub>rollover</sub> = (track / (2 × CoM_height)) × g</div>
+                    <div class="formula-desc">Static Stability Factor determines rollover threshold. Wider track and lower center of mass increase stability.</div>
+                </div>
+                <div class="math-formula">
+                    <h4>Failure Condition</h4>
+                    <div class="formula">Failure occurs when: a<sub>lat</sub> > min(a<sub>max</sub>, a<sub>rollover</sub>)</div>
+                    <div class="formula-desc">Vehicle fails when lateral acceleration exceeds either the spin-out or rollover limit, whichever is lower.</div>
+                </div>
             </div>
         </div>
 

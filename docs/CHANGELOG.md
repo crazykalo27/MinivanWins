@@ -1,13 +1,54 @@
 # Vehicle Turn Simulation - Change Log
 
+## Math Display Section (Jan 2026)
+
+### Changes
+- **Physics Equations Display**: Added section below simulations showing all formulas used
+  - Turn radius calculation
+  - Lateral acceleration formula
+  - Spin-out limit (friction-based)
+  - Rollover limit (Static Stability Factor)
+  - Failure condition logic
+  - Responsive grid layout with hover effects
+  - Clear mathematical notation with descriptions
+
+---
+
+## Failure Mode Controls (Jan 2026)
+
+### Changes
+- **Failure Mode Checkboxes**: Added options to ignore specific failure modes
+  - **Ignore Slipping**: Checkbox to disable spin-out failure detection
+  - **Ignore Tipping**: Checkbox to disable rollover failure detection
+  - Allows testing scenarios where only one failure mode is considered
+  - Useful for understanding which failure mode limits vehicle performance
+
+---
+
+## Enhanced Physics Model (Jan 2026)
+
+### Changes
+- **Vehicle properties now fully utilized**: All vehicle specifications now affect simulation calculations
+  - **Wheelbase**: Used in turn radius calculations (longer wheelbase = larger turning radius)
+  - **Weight**: Affects spin-out limits (heavier vehicles have better grip due to larger tire contact patches)
+  - **Drive Type**: FWD vehicles have slight stability advantage in turns
+- **Updated vehicle specifications**: More accurate weight and center of mass height values
+  - Toyota Corolla: 2,650 lbs, 21" CoM height
+  - Dodge Caravan: 4,560 lbs, 27" CoM height
+- **Improved turn radius calculation**: Now incorporates vehicle wheelbase for realistic turning behavior
+- **Enhanced spin-out physics**: Weight and drive type factors now considered in grip calculations
+
+---
+
 ## Speed Controls Update (Jan 2026)
 
 ### Changes
 - **Speed Step Input**: Added number input (default 1) to set how many mph to increment between tests
-- **Simulation Speed Lights**: Added 6 lights with arrow controls for playback speed
-  - Level 1 (green): Very slow animation
-  - Level 6 (red): Very fast animation
-  - Click arrows or lights directly to change speed
+- **Simulation Speed Slider**: Replaced discrete lights with continuous draggable slider
+  - Range: 0.01x (extremely slow) to 50x (as fast as computationally possible)
+  - Smooth exponential scaling for precise control
+  - Real-time speed display showing current multiplier
+  - Color-coded slider (green = slow, red = fast)
 
 ---
 

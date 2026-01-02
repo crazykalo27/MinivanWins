@@ -1,22 +1,35 @@
 // Vehicle specifications
+// Based on manufacturer data and NHTSA testing specifications
 const VEHICLES = {
     corolla: {
         name: 'Toyota Corolla',
-        weight: 2600, // lbs
-        centerOfMassHeight: 20, // inches
-        wheelbase: 102.4, // inches
-        frontTrack: 59.9, // inches
-        rearTrack: 59.4, // inches
-        driveType: 'FWD'
+        year: 2004,
+        weight: 2650, // lbs (curb weight, typical for base model)
+        centerOfMassHeight: 21, // inches (estimated from NHTSA data for similar sedans)
+        wheelbase: 102.4, // inches (official spec)
+        frontTrack: 59.9, // inches (official spec)
+        rearTrack: 59.4, // inches (official spec)
+        driveType: 'FWD', // Front-wheel drive
+        // Additional specs for reference (not used in current calculations)
+        length: 178.3, // inches
+        width: 66.9, // inches
+        height: 57.5, // inches
+        tireSize: 'P195/65R15' // Typical tire size
     },
     caravan: {
         name: 'Dodge Caravan',
-        weight: 4500, // lbs
-        centerOfMassHeight: 26, // inches
-        wheelbase: 121.2, // inches
-        frontTrack: 64.8, // inches
-        rearTrack: 64.8, // inches
-        driveType: 'FWD'
+        year: 2016,
+        weight: 4560, // lbs (curb weight, typical for Grand Caravan)
+        centerOfMassHeight: 27, // inches (higher due to minivan design)
+        wheelbase: 121.2, // inches (official spec)
+        frontTrack: 64.8, // inches (official spec)
+        rearTrack: 64.8, // inches (official spec)
+        driveType: 'FWD', // Front-wheel drive
+        // Additional specs for reference (not used in current calculations)
+        length: 202.8, // inches
+        width: 78.7, // inches
+        height: 68.9, // inches
+        tireSize: 'P225/65R17' // Typical tire size
     }
 };
 
@@ -28,10 +41,20 @@ const MPH_TO_FPS = 5280 / 3600; // feet per second
 class PhysicsEngine {
     constructor() {
         this.frictionCoeff = 0.7;
+        this.ignoreSlipping = false; // If true, ignore spin-out failures
+        this.ignoreTipping = false;  // If true, ignore rollover failures
     }
 
     setFrictionCoeff(mu) {
         this.frictionCoeff = mu;
+    }
+
+    setIgnoreSlipping(ignore) {
+        this.ignoreSlipping = ignore;
+    }
+
+    setIgnoreTipping(ignore) {
+        this.ignoreTipping = ignore;
     }
 
     /**
@@ -50,20 +73,27 @@ class PhysicsEngine {
      * For a right-hand turn, we use a reasonable radius based on angle
      * @param {number} turnAngleDegrees - Turn angle in degrees
      * @param {number} speedMPH - Speed in mph (affects radius)
+     * @param {Object} vehicle - Vehicle specification (for wheelbase)
      * @returns {number} Turn radius in feet
      */
-    calculateTurnRadius(turnAngleDegrees, speedMPH) {
-        // Base radius calculation: sharper turns = smaller radius
-        // For highway turns: radius ≈ speed² / (15 * sin(angle))
-        // For tighter turns, we use a more realistic formula
+    calculateTurnRadius(turnAngleDegrees, speedMPH, vehicle) {
         const angleRad = (turnAngleDegrees * Math.PI) / 180;
         
-        // Minimum radius based on angle (sharper angle = smaller radius)
-        // Typical turning radius for vehicles at different angles
-        const baseRadius = 50; // feet base radius
+        // Base radius calculation incorporates vehicle wheelbase
+        // Longer wheelbase vehicles have larger minimum turning radius
+        const wheelbaseFeet = vehicle.wheelbase * INCHES_TO_FEET;
+        
+        // Minimum turning radius is related to wheelbase and steering geometry
+        // Typical passenger cars: min radius ≈ 1.2-1.5x wheelbase for tight turns
+        const minRadiusFactor = 1.3; // Factor based on typical steering geometry
+        const baseRadius = wheelbaseFeet * minRadiusFactor;
+        
+        // Angle factor: sharper turns require smaller radius
+        // For a given turn angle, radius scales inversely with sin(angle)
         const angleFactor = 1 / Math.sin(angleRad);
         
-        // Speed factor: higher speeds need larger radii for the same angle
+        // Speed factor: higher speeds require larger radii for stability
+        // At higher speeds, vehicles naturally take wider arcs
         const speedFactor = Math.max(1, speedMPH / 30);
         
         return baseRadius * angleFactor * speedFactor;
@@ -71,11 +101,36 @@ class PhysicsEngine {
 
     /**
      * Calculate maximum lateral acceleration before spin-out (friction limit)
+     * Considers vehicle weight (affects tire contact patch) and drive type
      * @param {number} frictionCoeff - Coefficient of friction
+     * @param {Object} vehicle - Vehicle specification
      * @returns {number} Maximum lateral acceleration in ft/s²
      */
-    calculateSpinOutLimit(frictionCoeff) {
-        return frictionCoeff * GRAVITY;
+    calculateSpinOutLimit(frictionCoeff, vehicle) {
+        // Base friction limit
+        let baseLimit = frictionCoeff * GRAVITY;
+        
+        // Weight effect: Heavier vehicles have larger tire contact patches
+        // More weight = more normal force = more grip (up to a point)
+        // Typical passenger car weight range: 2000-5000 lbs
+        // Normalize weight effect (reference: 3000 lbs)
+        const weightNormalized = vehicle.weight / 3000;
+        // Weight improves grip but with diminishing returns (sqrt relationship)
+        const weightGripFactor = Math.sqrt(Math.min(weightNormalized, 1.5));
+        
+        // Drive type effect: FWD vs RWD affects handling characteristics
+        // FWD vehicles tend to understeer (safer, more predictable)
+        // RWD vehicles can oversteer (more prone to spin-out)
+        let driveTypeFactor = 1.0;
+        if (vehicle.driveType === 'FWD') {
+            // FWD vehicles are more stable in turns due to front weight bias
+            driveTypeFactor = 1.05; // Slight advantage
+        } else if (vehicle.driveType === 'RWD') {
+            // RWD can be more prone to oversteer
+            driveTypeFactor = 0.98; // Slight disadvantage
+        }
+        
+        return baseLimit * weightGripFactor * driveTypeFactor;
     }
 
     /**
@@ -106,9 +161,9 @@ class PhysicsEngine {
      * @returns {Object} Result with spinOut flag and details
      */
     checkSpinOut(vehicle, speedMPH, turnAngleDegrees) {
-        const turnRadius = this.calculateTurnRadius(turnAngleDegrees, speedMPH);
+        const turnRadius = this.calculateTurnRadius(turnAngleDegrees, speedMPH, vehicle);
         const lateralAccel = this.calculateLateralAcceleration(speedMPH, turnRadius);
-        const spinOutLimit = this.calculateSpinOutLimit(this.frictionCoeff);
+        const spinOutLimit = this.calculateSpinOutLimit(this.frictionCoeff, vehicle);
         
         return {
             willSpinOut: lateralAccel > spinOutLimit,
@@ -127,7 +182,7 @@ class PhysicsEngine {
      * @returns {Object} Result with rollover flag and details
      */
     checkRollover(vehicle, speedMPH, turnAngleDegrees) {
-        const turnRadius = this.calculateTurnRadius(turnAngleDegrees, speedMPH);
+        const turnRadius = this.calculateTurnRadius(turnAngleDegrees, speedMPH, vehicle);
         const lateralAccel = this.calculateLateralAcceleration(speedMPH, turnRadius);
         const rolloverLimit = this.calculateRolloverLimit(vehicle);
         
@@ -154,8 +209,16 @@ class PhysicsEngine {
         const rolloverCheck = this.checkRollover(vehicle, speedMPH, turnAngleDegrees);
         
         // Determine which failure occurs first
-        const spinOutMargin = spinOutCheck.margin;
-        const rolloverMargin = rolloverCheck.margin;
+        let spinOutMargin = spinOutCheck.margin;
+        let rolloverMargin = rolloverCheck.margin;
+        
+        // If ignoring a failure mode, set its margin to positive infinity (never fails)
+        if (this.ignoreSlipping) {
+            spinOutMargin = Infinity;
+        }
+        if (this.ignoreTipping) {
+            rolloverMargin = Infinity;
+        }
         
         let failureType = null;
         let hasFailed = false;

@@ -14,14 +14,12 @@ const turnAngleValue = document.getElementById('turnAngleValue');
 const frictionCoeffSlider = document.getElementById('frictionCoeff');
 const frictionCoeffValue = document.getElementById('frictionCoeffValue');
 const speedStepInput = document.getElementById('speedStep');
-const speedUpBtn = document.getElementById('speedUp');
-const speedDownBtn = document.getElementById('speedDown');
-const speedLights = document.querySelectorAll('.speed-light');
+const simSpeedSlider = document.getElementById('simSpeedSlider');
+const simSpeedValue = document.getElementById('simSpeedValue');
+const ignoreSlippingCheckbox = document.getElementById('ignoreSlipping');
+const ignoreTippingCheckbox = document.getElementById('ignoreTipping');
 const startBtn = document.getElementById('startBtn');
 const resetBtn = document.getElementById('resetBtn');
-
-// Simulation speed level (1-6): 1=slowest, 6=fastest
-let simSpeedLevel = 3; // Default to middle speed
 
 const corollaSpeedDisplay = document.getElementById('corollaSpeed');
 const corollaStatusDisplay = document.getElementById('corollaStatus');
@@ -48,47 +46,60 @@ frictionCoeffSlider.addEventListener('input', (e) => {
     caravanSim.setFrictionCoeff(mu);
 });
 
-// Speed lights update function
-function updateSpeedLights() {
-    speedLights.forEach((light, index) => {
-        const level = index + 1;
-        if (level <= simSpeedLevel) {
-            light.classList.add('active');
-        } else {
-            light.classList.remove('active');
-        }
-    });
-    // Update simulation speed multipliers
-    const speedMultipliers = [0.15, 0.35, 0.6, 1.0, 2.0, 4.0]; // 1=very slow, 6=very fast
-    const multiplier = speedMultipliers[simSpeedLevel - 1];
+// Failure mode checkboxes
+ignoreSlippingCheckbox.addEventListener('change', (e) => {
+    physicsEngine.setIgnoreSlipping(e.target.checked);
+});
+
+ignoreTippingCheckbox.addEventListener('change', (e) => {
+    physicsEngine.setIgnoreTipping(e.target.checked);
+});
+
+// Map slider value (0-100) to speed multiplier
+// Uses exponential scale: very slow (0.01x) to very fast (50x)
+function calculateSpeedMultiplier(sliderValue) {
+    // Slider value: 0-100
+    // Map to exponential scale: 0.01x (very slow) to 50x (as fast as computationally possible)
+    const minMultiplier = 0.01; // Extremely slow
+    const maxMultiplier = 50;    // As fast as computationally possible
+    const midValue = 50;         // Slider value for normal speed (1.0x)
+    
+    // Calculate base so that midValue gives 1.0x exactly
+    // 1.0 = min * base^(midValue/100)
+    // base = (1.0/min)^(100/midValue) = (100)^2 = 10,000
+    const base = Math.pow(1.0 / minMultiplier, 100 / midValue);
+    
+    // Map slider value: multiplier = min * base^(value/100)
+    let multiplier = minMultiplier * Math.pow(base, sliderValue / 100);
+    
+    // Clamp to reasonable max (50x is already extremely fast)
+    return Math.min(multiplier, maxMultiplier);
+}
+
+// Update simulation speed from slider
+function updateSimSpeed() {
+    const sliderValue = parseInt(simSpeedSlider.value);
+    const multiplier = calculateSpeedMultiplier(sliderValue);
+    
+    // Update display
+    if (multiplier < 1) {
+        simSpeedValue.textContent = multiplier.toFixed(2) + 'x';
+    } else if (multiplier < 10) {
+        simSpeedValue.textContent = multiplier.toFixed(1) + 'x';
+    } else {
+        simSpeedValue.textContent = multiplier.toFixed(0) + 'x';
+    }
+    
+    // Update simulations
     corollaSim.setSimSpeed(multiplier);
     caravanSim.setSimSpeed(multiplier);
 }
 
-speedUpBtn.addEventListener('click', () => {
-    if (simSpeedLevel < 6) {
-        simSpeedLevel++;
-        updateSpeedLights();
-    }
-});
+// Slider event listener
+simSpeedSlider.addEventListener('input', updateSimSpeed);
 
-speedDownBtn.addEventListener('click', () => {
-    if (simSpeedLevel > 1) {
-        simSpeedLevel--;
-        updateSpeedLights();
-    }
-});
-
-// Click on lights to set speed directly
-speedLights.forEach((light) => {
-    light.addEventListener('click', () => {
-        simSpeedLevel = parseInt(light.dataset.level);
-        updateSpeedLights();
-    });
-});
-
-// Initialize speed lights
-updateSpeedLights();
+// Initialize speed (default to middle: 50 = ~1.0x)
+updateSimSpeed();
 
 startBtn.addEventListener('click', async () => {
     if (corollaSim.isRunning || caravanSim.isRunning) {
