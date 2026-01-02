@@ -2,7 +2,7 @@
 // Based on manufacturer data and NHTSA testing specifications
 const VEHICLES = {
     corolla: {
-        name: 'Toyota Corolla',
+        name: 'Toyota Celica',
         year: 2004,
         weight: 2650, // lbs (curb weight, typical for base model)
         centerOfMassHeight: 21, // inches (estimated from NHTSA data for similar sedans)

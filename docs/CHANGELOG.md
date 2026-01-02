@@ -83,7 +83,7 @@
   - **Weight**: Affects spin-out limits (heavier vehicles have better grip due to larger tire contact patches)
   - **Drive Type**: FWD vehicles have slight stability advantage in turns
 - **Updated vehicle specifications**: More accurate weight and center of mass height values
-  - Toyota Corolla: 2,650 lbs, 21" CoM height
+  - Toyota Celica: 2,650 lbs, 21" CoM height
   - Dodge Caravan: 4,560 lbs, 27" CoM height
 - **Improved turn radius calculation**: Now incorporates vehicle wheelbase for realistic turning behavior
 - **Enhanced spin-out physics**: Weight and drive type factors now considered in grip calculations
@@ -120,7 +120,7 @@
   - Center of mass height, track width, and vehicle weight considerations
   
 - **Vehicle Specifications**:
-  - Toyota Corolla (2004): 2600 lbs, CoM 20", wheelbase 102.4", tracks 59.9"/59.4"
+  - Toyota Celica (2004): 2600 lbs, CoM 20", wheelbase 102.4", tracks 59.9"/59.4"
   - Dodge Caravan (2016): 4500 lbs, CoM 26", wheelbase 121.2", tracks 64.8"/64.8"
 
 - **Simulation Features**:

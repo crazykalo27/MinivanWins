@@ -1,6 +1,6 @@
 # Vehicle Turn Simulation
 
-A physics-based simulation comparing the Toyota Corolla (2004) and Dodge Caravan (2016) in turning scenarios.
+A physics-based simulation comparing the Toyota Celica (2004) and Dodge Caravan (2016) in turning scenarios.
 
 ## Features
 
@@ -24,7 +24,7 @@ A physics-based simulation comparing the Toyota Corolla (2004) and Dodge Caravan
 
 ## Vehicle Specifications
 
-### Toyota Corolla (2004)
+### Toyota Celica (2004)
 - Weight: 2,600 lbs
 - Center of Mass Height: 20 inches
 - Wheelbase: 102.4 inches

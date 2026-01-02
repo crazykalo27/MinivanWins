@@ -218,7 +218,7 @@ startBtn.addEventListener('click', async () => {
         if (corollaResult.hasFailed && caravanResult.hasFailed) {
             // Winner is the one that lasted longer (higher speed)
             if (corollaResult.speed > caravanResult.speed) {
-                winner = 'Toyota Corolla';
+                winner = 'Toyota Celica';
             } else if (caravanResult.speed > corollaResult.speed) {
                 winner = 'Dodge Caravan';
             } else {
@@ -226,13 +226,13 @@ startBtn.addEventListener('click', async () => {
                 winner = 'Tie!';
             }
         }
-        // Case 2: Corolla failed, Caravan did not (Caravan wins)
+        // Case 2: Celica failed, Caravan did not (Caravan wins)
         else if (corollaResult.hasFailed && !caravanResult.hasFailed) {
             winner = 'Dodge Caravan';
         }
-        // Case 3: Caravan failed, Corolla did not (Corolla wins)
+        // Case 3: Caravan failed, Celica did not (Celica wins)
         else if (!corollaResult.hasFailed && caravanResult.hasFailed) {
-            winner = 'Toyota Corolla';
+            winner = 'Toyota Celica';
         }
         // Case 4: Neither failed (both completed successfully)
         else {
@@ -244,7 +244,7 @@ startBtn.addEventListener('click', async () => {
             corollaStatusDisplay.textContent = `Failed: ${corollaResult.failureType}`;
             corollaStatusDisplay.className = 'status-failed';
         } else if (caravanResult.hasFailed) {
-            // Corolla wins because caravan failed
+            // Celica wins because caravan failed
             corollaStatusDisplay.textContent = 'Winner!';
             corollaStatusDisplay.className = 'status-ready';
         } else {
@@ -256,7 +256,7 @@ startBtn.addEventListener('click', async () => {
             caravanStatusDisplay.textContent = `Failed: ${caravanResult.failureType}`;
             caravanStatusDisplay.className = 'status-failed';
         } else if (corollaResult.hasFailed) {
-            // Caravan wins because corolla failed
+            // Caravan wins because Celica failed
             caravanStatusDisplay.textContent = 'Winner!';
             caravanStatusDisplay.className = 'status-ready';
         } else {
@@ -265,7 +265,7 @@ startBtn.addEventListener('click', async () => {
         }
         
         // Analysis text (use innerHTML to render math formatting)
-        corollaAnalysis.innerHTML = buildVehicleAnalysis('Toyota Corolla', corollaResult);
+        corollaAnalysis.innerHTML = buildVehicleAnalysis('Toyota Celica', corollaResult);
         caravanAnalysis.innerHTML = buildVehicleAnalysis('Dodge Caravan', caravanResult);
         winnerSummary.textContent = buildWinnerSummary(winner, corollaResult, caravanResult);
         
@@ -302,7 +302,7 @@ resetBtn.addEventListener('click', () => {
     caravanStatusDisplay.textContent = 'Ready';
     caravanStatusDisplay.className = 'status-ready';
     document.getElementById('fireworks-container').innerHTML = '';
-    corollaAnalysis.textContent = 'Adjust angle and friction, then start to see how the Corolla handles the turn.';
+    corollaAnalysis.textContent = 'Adjust angle and friction, then start to see how the Celica handles the turn.';
     caravanAnalysis.textContent = 'Adjust angle and friction, then start to see how the Caravan handles the turn.';
     winnerSummary.textContent = 'Run the simulation to see which vehicle wins and why.';
     currentSpeedDisplay.textContent = 'Current test speed: 0 mph';
@@ -383,14 +383,14 @@ function buildWinnerSummary(winner, corollaResult, caravanResult) {
     
     // Case 3: One vehicle failed, other wins
     if (corollaResult.hasFailed && !caravanResult.hasFailed) {
-        return `${winner} wins! Corolla failed at ${corollaSpeed} mph, while Caravan completed successfully at ${caravanSpeed} mph.`;
+        return `${winner} wins! Celica failed at ${corollaSpeed} mph, while Caravan completed successfully at ${caravanSpeed} mph.`;
     }
     
     if (!corollaResult.hasFailed && caravanResult.hasFailed) {
-        return `${winner} wins! Caravan failed at ${caravanSpeed} mph, while Corolla completed successfully at ${corollaSpeed} mph.`;
+        return `${winner} wins! Caravan failed at ${caravanSpeed} mph, while Celica completed successfully at ${corollaSpeed} mph.`;
     }
     
     // Case 4: Both failed - winner is the one that lasted longer
-    return `${winner} wins by sustaining a higher speed before failure: Corolla ${corollaSpeed} mph vs Caravan ${caravanSpeed} mph.`;
+    return `${winner} wins by sustaining a higher speed before failure: Celica ${corollaSpeed} mph vs Caravan ${caravanSpeed} mph.`;
 }
 
